@@ -1,7 +1,15 @@
 import math
 import numpy as np
 from collections import defaultdict
-#from ..data_loaders.gt_loaders.gt_loader import *
+import sys
+sys.path.append('./')
+# https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
+# "As a caveat: This works so long as the importing script is run from its containing directory. Otherwise the parent directory of whatever other directory the script is run from will be appended to the path and the import will fail."
+try:
+    from data_loaders.gt_loaders.gt_loader import *
+except ImportError:
+    sys.path.append('../')
+    from data_loaders.gt_loaders.gt_loader import *
 
 # Ignore divide by zero. For many metrics, these have special meaning.
 np.seterr(divide='ignore', invalid='ignore')
@@ -575,20 +583,6 @@ class TestUtils(unittest.TestCase):
         np.testing.assert_array_almost_equal(cm["recall"], np.array(supposed_recalls))
         np.testing.assert_array_almost_equal(cm["weighted_recall"], np.array(supposed_recalls))
 
-if __name__ == "__main__":
-    print("Running unit tests...")
-    unittest.main(verbosity=2)
-    cm = CachedMetrics(np.random.random((10,10,6)), np.ones((10,10,6)))
-    cm = CachedMetrics(np.random.random((10,10,6)), np.random.random((10,10,6)))
-    print cm["recall"]
-    print cm["precision"]
-    print cm["f1_score"]
-    print cm["accuracy"]
-    print cm["intersection_over_union"]
-    print cm["foreground_accuracy"]
-    # TO compute overlap versions of the metric, recompute with masked versions, only including in preds and gts
-    # those areas that contain overlapped pixels.
-
 
 # If you want weighted precision or weighted recall, put in 
 # weights={"precision":precisionweights, "recall"=recallweights}, etc.
@@ -604,12 +598,42 @@ def score(gt, pred, predthreshold=0.5, gtthreshold=0.5, predweights=None, gtweig
     cm = CachedMetrics(gt, pred, weights=weights)
     return cm
 
-def distance_reciprocal_distortion_metric(gt, pred):
-    pass
+standard_metrics = ["f1_score", "recall", "precision", "intersection_over_union", "accuracy"]
 
-# TODO: Move all of the different performance measures into their own function definitions?
+if __name__ == "__main__":
+    import sys
+    print("Usage: python evaluations.py gt_folder pred_folder")
+    if len(sys.argv) == 1:
+        print("Running unit tests...")
+        unittest.main(verbosity=2)
+        cm = CachedMetrics(np.random.random((10,10,6)), np.ones((10,10,6)))
+        cm = CachedMetrics(np.random.random((10,10,6)), np.random.random((10,10,6)))
+        print cm["recall"]
+        print cm["precision"]
+        print cm["f1_score"]
+        print cm["accuracy"]
+        print cm["intersection_over_union"]
+        print cm["foreground_accuracy"]
+        # TO compute overlap versions of the metric, recompute with masked versions, only including in preds and gts
+        # those areas that contain overlapped pixels.
+    # Perform evaluation on the contents of the target folder.
+    test_images = [os.path.join(sys.argv[1], f) for f in os.listdir(sys.argv[1]) if '.jpg' == f[-4:]]
+    pred_files = [f.replace(sys.argv[1], sys.argv[2]) for f in test_images]
+    scores = []
+    for f,f2 in zip(test_images, pred_files):
+        print "Evaluating", f, f2
+        gt = load_gt(f)
+        pred = load_gt(f2)
+        s = score(gt, pred)
+        for metric in standard_metrics:
+            print metric, s[metric]
+        for metric in standard_metrics:
+            print "Average", metric, np.mean(s[metric])
+        scores.append(s)
 
 # TODO: Implement DRD, MPM, PSNR, PPB.
+def distance_reciprocal_distortion_metric(gt, pred):
+    pass
 
 def mask_image(img, layer_mask):
     pass
