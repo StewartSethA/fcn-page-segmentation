@@ -152,7 +152,7 @@ def load_gt_multihot_bit_indexed_png(image_path, num_classes, dontcare_idx=-1):
     return gt
 
 # Disk-Caching wrapper for loading ground truth. Currently uses .npz format.
-def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit_indexed_png, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=5):
+def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit_indexed_png, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1):
     # First check the memory cache.
     if memory_cache is not None:
         if debuglevel > 1:
@@ -243,18 +243,20 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
 
 
 # Automatically determines the GT loader to use.
-def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache=False, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=5):
+def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache=False, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1):
     if debuglevel > 3:
         print "Loading GT for base file", image_path
     gt_loader = load_gt_from_suffices
     if os.path.exists(image_path.replace("jpg", "png")):
         gt_loader = load_gt_multihot_bit_indexed_png
-        print "Using multihot layer loader on", image_path
-    else:    
+        if debuglevel > 2:
+            print "Using multihot layer loader on", image_path
+    else:
         for classnum in range(num_classes):
             gt_layer_path = image_path.replace(".jpg", "_" + str(classnum) + ".png")
             if os.path.exists(gt_layer_path):
-                print "Using png layer loader on", gt_layer_path
+                if debuglevel > 2:
+                    print "Using png layer loader on", gt_layer_path
                 gt_loader = load_gt_pnglayers
                 break
     if gt_layer_path is not None and not os.path.exists(gt_layer_path):
@@ -263,16 +265,18 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
         for class_suffix, classnum in suffix_to_class_map.items():
             gt_layer_path = image_path + "_" + class_suffix + "." + gtext
             if os.path.exists(gt_layer_path):
-                print "Using suffix GT loader on ", image_path
+                if debuglevel > 2:
+                    print "Using suffix GT loader on ", image_path
                 gt_loader = load_gt_from_suffices
+                break
             
-    return load_gt_diskcached(image_path, num_classes=6, gt_loader=gt_loader, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=5)
+    return load_gt_diskcached(image_path, num_classes=6, gt_loader=gt_loader, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1)
 
 load_gt = load_gt_automatic
 
 
 # Index a training set for efficient per-class exemplar access.
-def index_training_set_by_class(training_folder, num_classes=4, debuglevel=0):
+def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1):
     """
     Creates an index of a training set, with GT presence per class, per image.
     This index can be used to create class-balanced batches efficiently.

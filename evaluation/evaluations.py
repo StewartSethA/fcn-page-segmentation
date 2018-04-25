@@ -602,34 +602,56 @@ standard_metrics = ["f1_score", "recall", "precision", "intersection_over_union"
 
 if __name__ == "__main__":
     import sys
-    print("Usage: python evaluations.py gt_folder pred_folder")
-    if len(sys.argv) == 1:
-        print("Running unit tests...")
-        unittest.main(verbosity=2)
-        cm = CachedMetrics(np.random.random((10,10,6)), np.ones((10,10,6)))
-        cm = CachedMetrics(np.random.random((10,10,6)), np.random.random((10,10,6)))
-        print cm["recall"]
-        print cm["precision"]
-        print cm["f1_score"]
-        print cm["accuracy"]
-        print cm["intersection_over_union"]
-        print cm["foreground_accuracy"]
-        # TO compute overlap versions of the metric, recompute with masked versions, only including in preds and gts
-        # those areas that contain overlapped pixels.
-    # Perform evaluation on the contents of the target folder.
-    test_images = [os.path.join(sys.argv[1], f) for f in os.listdir(sys.argv[1]) if '.jpg' == f[-4:]]
-    pred_files = [f.replace(sys.argv[1], sys.argv[2]) for f in test_images]
-    scores = []
-    for f,f2 in zip(test_images, pred_files):
-        print "Evaluating", f, f2
-        gt = load_gt(f)
-        pred = load_gt(f2)
-        s = score(gt, pred)
-        for metric in standard_metrics:
-            print metric, s[metric]
-        for metric in standard_metrics:
-            print "Average", metric, np.mean(s[metric])
-        scores.append(s)
+    if len(sys.argv) == 3:
+        if os.path.isfile(sys.argv[1]):
+            f,f2 = sys.argv[1],sys.argv[2]
+            print "Evaluating", f, f2
+            gt = load_gt(f)
+            pred = load_gt(f2)
+            s = score(gt, pred)
+            for metric in standard_metrics:
+                print metric, s[metric]
+            for metric in standard_metrics:
+                print "Average", metric, np.mean(s[metric])
+            print ""
+        else:
+            test_images = [os.path.join(sys.argv[1], f) for f in os.listdir(sys.argv[1]) if '.jpg' == f[-4:]]
+            pred_files = [f.replace(sys.argv[1], sys.argv[2]) for f in test_images]
+            scores = defaultdict(list)
+            for f,f2 in zip(test_images, pred_files):
+                print "Evaluating", f, f2
+                gt = load_gt(f)
+                pred = load_gt(f2)
+                s = score(gt, pred)
+                for metric in standard_metrics:
+                    print metric, s[metric]
+                    scores[metric].append(s[metric])
+                for metric in standard_metrics:
+                    print "Average", metric, np.mean(s[metric])
+                print ""
+            print "Averages for entire directory: (", len(test_images) ,"items )"
+            scores[metric] = np.array(scores[metric])
+            for metric in standard_metrics:
+                print metric, np.mean(scores[metric], axis=0)
+            for metric in standard_metrics:
+                print "Average", metric, np.mean(scores[metric])
+    else:
+        print("Usage: python evaluations.py gt_folder pred_folder")
+        print("With no arguments, runs unit tests.")
+        if len(sys.argv) == 1:
+            print("Running unit tests...")
+            unittest.main(verbosity=2)
+            cm = CachedMetrics(np.random.random((10,10,6)), np.ones((10,10,6)))
+            cm = CachedMetrics(np.random.random((10,10,6)), np.random.random((10,10,6)))
+            print cm["recall"]
+            print cm["precision"]
+            print cm["f1_score"]
+            print cm["accuracy"]
+            print cm["intersection_over_union"]
+            print cm["foreground_accuracy"]
+            # TO compute overlap versions of the metric, recompute with masked versions, only including in preds and gts
+            # those areas that contain overlapped pixels.
+        # Perform evaluation on the contents of the target folder.
 
 # TODO: Implement DRD, MPM, PSNR, PPB.
 def distance_reciprocal_distortion_metric(gt, pred):
