@@ -1,0 +1,1 @@
+for t in 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.95 0.99; do for f in `ls masked/*.json`; do echo "Threshold:" $t; echo "File:" $f; python score_text_recognition.py masked/K4Z_UnionA_GT.png_GT.json $f $t | tee ${f}_${t}_score.txt; echo ">>>>>>>"; done; done | grep -e "CER:" -e ">>>" -e "File:" -e "Threshold:"
