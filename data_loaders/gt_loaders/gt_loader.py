@@ -35,14 +35,14 @@ def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, suffix_to_
             if gt is None:
                 gt = np.zeros((gt_layer.shape[0], gt_layer.shape[1], gtdim))
             gt[:,:,classnum] = gt_layer
-    # Catch-all: No GT channels loaded? Still return the appropriate zeros.
+    # Catch-all: No GT channels loaded? Still return the appropriate sized block of zeros.
     if gt is None:
         img = cv2.imread(image_path)
         gt = np.zeros((img.shape[0], img.shape[1], gtdim))
     return gt
 
 # Load GT from a set of greyscale PNGs.
-def load_gt_pnglayers(image_path, num_classes, dontcare_idx=-1):
+def load_gt_pnglayers(image_path, num_classes=6, dontcare_idx=-1):
     """
     Loads a set of ground truth (GT) channels for an image from correspondingly named .PNG files.
 
@@ -90,7 +90,7 @@ def load_gt_pnglayers(image_path, num_classes, dontcare_idx=-1):
     return gt
 
 # Load GT from a single multi-hot bit-indexed color PNG.
-def load_gt_multihot_bit_indexed_png(image_path, num_classes, dontcare_idx=-1):
+def load_gt_multihot_bit_indexed_png(image_path, num_classes=6, dontcare_idx=-1):
     """
     Loads ground truth (GT) channels from a single correspondingly named color PNG file.
     If the image is named "dir/my_image.jpg", then the ground truth file is named "dir/my_image.png".
@@ -270,7 +270,7 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
                 gt_loader = load_gt_from_suffices
                 break
             
-    return load_gt_diskcached(image_path, num_classes=6, gt_loader=gt_loader, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1)
+    return load_gt_diskcached(image_path, num_classes=num_classes, gt_loader=gt_loader, dontcare_idx=dontcare_idx, use_disk_cache=use_disk_cache, memory_cache=memory_cache, compress_in_ram=compress_in_ram, downsampling_rate=downsampling_rate, debuglevel=debuglevel)
 
 load_gt = load_gt_automatic
 
@@ -301,11 +301,8 @@ def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1):
     pixel_counts_byclass = defaultdict(lambda:0)
     total_pixel_count = 0.0
     for image_path in image_list:
-        #if debuglevel > 10 and False:
-        #    print(image_path)
         gt = load_gt(image_path, num_classes)
         for classnum in range(0, num_classes):
-            #print(classnum)
             gt_layer = gt[:,:,classnum]
             pixel_count = np.count_nonzero(gt_layer)
             total_pixel_count += pixel_count
@@ -331,6 +328,9 @@ def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1):
         print("Proportion of pixels by class:")
         for c in pixel_counts_byclass.keys():
             print(c, str(float(pixel_counts_byclass[c])/total_pixel_count))
+    for c in range(num_classes):
+        if len(class_to_samples[c]) == 0:
+            print "WARNING!!! Dataset has zero instances representing class ", c, ". Training and validation performance will be affected adversely."
     return class_to_samples, image_list, pixel_counts_byclass
 
 
@@ -338,7 +338,6 @@ def load_image(image_path, debuglevel=0, downsampling_rate=1.0, channels=3):
     if debuglevel > 0:
         print("Reading image", image_path, "from disk.")
     image = cv2.imread(image_path) # Three channel!
-    #print("Finished reading image", image_path)
     if len(image.shape) < channels:
         image = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
     if downsampling_rate > 1.0:
