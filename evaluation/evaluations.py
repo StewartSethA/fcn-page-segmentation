@@ -1,15 +1,31 @@
+"""
+evaluations.py
+
+Performs evaluations of pixel-wise predictions against ground-truth.
+Includes both visual and numeric results for detailing accuracy and errors.
+
+Author: Seth Stewart
+stewart.seth.a@gmail.com
+Brigham Young University
+February 2018
+"""
+
 import math
 import numpy as np
 from collections import defaultdict
+
+# Import ground truth loaders.
 import sys
 sys.path.append('./')
 # https://stackoverflow.com/questions/4383571/importing-files-from-different-folder
 # "As a caveat: This works so long as the importing script is run from its containing directory. Otherwise the parent directory of whatever other directory the script is run from will be appended to the path and the import will fail."
 try:
     from data_loaders.gt_loaders.gt_loader import *
+    from visuals.visuals import *
 except ImportError:
     sys.path.append('../')
     from data_loaders.gt_loaders.gt_loader import *
+    from visuals.visuals import *
 
 # Ignore divide by zero. For many metrics, these have special meaning.
 np.seterr(divide='ignore', invalid='ignore')
@@ -34,6 +50,17 @@ def weight_mask(channels, mask):
     ch = np.transpose(channels, (2, 0, 1))
     masked = np.multiply(ch, mask).transpose(1,2,0)
     return masked
+
+# Saves visualizations of the GT, predictions, and errors to disk.
+def visualize_errors(outpath, gt, pred, gtthreshold=0.5, predthreshold=0.5):
+    cv2.imwrite(outpath+"_gt.png", vis_img(gt, bgr=False)*255)
+    cv2.imwrite(outpath+"_pred.jpg", vis_img(pred, bgr=False)*255)
+    predthresh = np.greater(pred, predthreshold).astype('float32')
+    cv2.imwrite(outpath+"_predthresh"+str(predthreshold)+".jpg", vis_img(predthresh, bgr=False)*255)
+    pred_gt_diff=np.abs(pred-gt)
+    cv2.imwrite(outpath+"_predgtdiff.jpg", vis_img(pred_gt_diff, bgr=False)*255)
+    predthresh_gt_diff=np.abs(predthresh-np.greater(gt, 0.5).astype('float32'))
+    cv2.imwrite(outpath+"_predthreshgtdiff"+str(predthreshold)+".jpg", vis_img(predthresh_gt_diff, bgr=False)*255)
 
 class CachedMetrics(dict):
     '''
@@ -221,7 +248,7 @@ class CachedMetrics(dict):
     # How many have 1, how many have 2, etc.
     def counts_overlapped_gt_classes(self):
         return np.unique(self["overlapped_gt_pixels"], return_counts=True)
-    
+        # TODO: Reconcile with the following earlier code:
         print("Class:", c, "GT Mass:", gt_mass, "true_positive_mass:", true_positives[c], "pred mass:", pred_mass, "union mass:", union_mass)
         true_positive_overlap_mass = np.count_nonzero(np.multiply(true_positive_mask, gt_overlap_mask))
         print("True positive overlap mass:", true_positive_overlap_mass)
@@ -598,45 +625,63 @@ def score(gt, pred, predthreshold=0.5, gtthreshold=0.5, predweights=None, gtweig
     cm = CachedMetrics(gt, pred, weights=weights)
     return cm
 
-standard_metrics = ["f1_score", "recall", "precision", "intersection_over_union", "accuracy"]
+standard_metrics = ["f1_score", "recall", "precision", "intersection_over_union", "accuracy", "confusion"]
+
+def score_and_visualize_errors(gtfile, predfile, gtthreshold=0.5, predthreshold=0.5):
+    gt = load_gt(gtfile)
+    pred = load_gt(predfile)
+    s = score(gt, pred, gtthreshold, predthreshold)
+    visualize_errors(predfile, gt, pred, gtthreshold, predthreshold)
+    for metric in standard_metrics:
+        print metric, s[metric]
+    for metric in standard_metrics:
+        print "Average", metric, np.mean(s[metric])
+    return s
+
+def visualize_confusion(outpath, confusion):
+    sqrt_conf = np.sqrt(confusion.astype('float32'))
+    scaled_conf = sqrt_conf / np.max(sqrt_conf, axis=0)
+    cv2.imwrite(outpath+"_confusion.png", confusion*255)
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) == 3:
+    if len(sys.argv) > 2:
+        gtthreshold = 0.5
+        predthreshold = 0.5
+        if len(sys.argv) > 3:
+            predthreshold = float(sys.argv[3])
+        if len(sys.argv) > 4:
+            gtthreshold = float(sys.argv[4])
         if os.path.isfile(sys.argv[1]):
             f,f2 = sys.argv[1],sys.argv[2]
             print "Evaluating", f, f2
-            gt = load_gt(f)
-            pred = load_gt(f2)
-            s = score(gt, pred)
-            for metric in standard_metrics:
-                print metric, s[metric]
-            for metric in standard_metrics:
-                print "Average", metric, np.mean(s[metric])
+            score_and_visualize_errors(f, f2, gtthreshold, predthreshold)
             print ""
         else:
             test_images = [os.path.join(sys.argv[1], f) for f in os.listdir(sys.argv[1]) if '.jpg' == f[-4:]]
             pred_files = [f.replace(sys.argv[1], sys.argv[2]) for f in test_images]
+            print "Test images", test_images
+            print ""
+            print "Pred files", pred_files
+            print ""
             scores = defaultdict(list)
             for f,f2 in zip(test_images, pred_files):
                 print "Evaluating", f, f2
-                gt = load_gt(f)
-                pred = load_gt(f2)
-                s = score(gt, pred)
+                s = score_and_visualize_errors(f, f2, gtthreshold, predthreshold)
+                visualize_confusion(f2, s["confusion"])
                 for metric in standard_metrics:
-                    print metric, s[metric]
                     scores[metric].append(s[metric])
-                for metric in standard_metrics:
-                    print "Average", metric, np.mean(s[metric])
                 print ""
+            
             print "Averages for entire directory: (", len(test_images) ,"items )"
-            scores[metric] = np.array(scores[metric])
             for metric in standard_metrics:
+                scores[metric] = np.array(scores[metric])
                 print metric, np.mean(scores[metric], axis=0)
+            visualize_confusion(f2, np.mean(scores["confusion"]))
             for metric in standard_metrics:
                 print "Average", metric, np.mean(scores[metric])
     else:
-        print("Usage: python evaluations.py gt_folder pred_folder")
+        print("Usage: python evaluations.py gt_folder pred_folder [predthreshold] [gtthreshold]")
         print("With no arguments, runs unit tests.")
         if len(sys.argv) == 1:
             print("Running unit tests...")
