@@ -212,11 +212,20 @@ def preproc(imgs,gts,num_classes,batch_size=64,width=28,height=28, do_preproc=Tr
         gt = gts[n]
         # Randomly rotate each sample
         if random.random() > rotate_freq:
+            h,w = img.shape[0], img.shape[1]
             angle = random.randint(-angle_range,angle_range)
             p = (img.shape[1]/2, img.shape[0]/2)
             M = cv2.getRotationMatrix2D(p, angle, 1)
-            img = cv2.warpAffine(img, M, (img.shape[1],img.shape[0]), borderMode=cv2.BORDER_REPLICATE)
-            gt = cv2.warpAffine(gt, M, (gt.shape[1],gt.shape[0]), borderMode=cv2.BORDER_REPLICATE)
+            # New improved rotate
+            import imutils
+            img = imutils.rotate_bound(img, angle)
+            gt = imutils.rotate_bound(gt, angle)
+            oy = (img.shape[0] - h)/2
+            ox = (img.shape[1] - w)/2
+            img = img[oy:oy+h,ox:ox+w]
+            gt = gt[oy:oy+h,ox:ox+w,:]
+            #img = cv2.warpAffine(img, M, (img.shape[1],img.shape[0]), borderMode=cv2.BORDER_REPLICATE)
+            #gt = cv2.warpAffine(gt, M, (gt.shape[1],gt.shape[0]), borderMode=cv2.BORDER_REPLICATE)
         if random.random() < noise_freq:
             mx = random.randint(5,int(max_noise_pct*255))
             mn = random.randint(0,min(mx-1,255))

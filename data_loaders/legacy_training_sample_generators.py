@@ -313,7 +313,7 @@ def get_masked_regionsampler_semanticseg_multichannel_withpairedregions(img, mas
     return region, encoded_gt
 
 # Retrieves a training sample from an image with the given ground truth label and multichannel region mask
-def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0, numclasses=4, label=0, minsize=28, maxsize=400, height=28, width=28, blank_label=-1, maskchannel=0, page=None):
+def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0, numclasses=4, label=0, minsize=28, maxsize=400, height=28, width=28, blank_label=-1, maskchannel=0, page=None, background=0):
     invalid = True
     tries = 0
     criterion = 0.00005 #.03 # 1 is center pixel, <1 is proportion of "on" pixels

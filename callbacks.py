@@ -13,6 +13,7 @@ from evaluation.evaluations import score
 from evaluation.evaluations import CachedMetrics
 import psutil
 import shutil
+import os
 #from keras_visualize_activations.read_activations import *
 
 # Pixels per second logging too!!!
@@ -82,11 +83,12 @@ def visualize_weights(model, screen_height, screen_width, batch_num=0):
 
 import visuals
 class DisplayTrainingSamplesCallback(Callback):
-    def __init__(self, training_generator_class, model=None, interval=10):
+    def __init__(self, training_generator_class, model=None, interval=10, log_dir=None):
         self.training_generator = training_generator_class
         self.interval = interval
         self.batch_num = -2
         self.model = model
+        self.log_dir = log_dir
 
     def on_batch_end(self, batch, logs={}):
         self.batch_num += 1
@@ -96,9 +98,13 @@ class DisplayTrainingSamplesCallback(Callback):
                 plt.figure(3)
                 v = show(self.training_generator.gt, bgr=True)
                 plt.imshow(v)
+                if self.log_dir is not None:
+                    plt.savefig(os.path.join(self.log_dir, "TrainGT.png"))
             if self.training_generator.image is not None:
                 plt.figure(2)
                 plt.imshow(self.training_generator.image)
+                if self.log_dir is not None:
+                    plt.savefig(os.path.join(self.log_dir, "TrainImage.png"))
                 if self.model is not None:
                     im = self.training_generator.image
                     plt.figure(4)
@@ -107,6 +113,8 @@ class DisplayTrainingSamplesCallback(Callback):
                     print "Pred shape:", self.pred.shape
                     print "Pred min/max:", np.min(self.pred), np.max(self.pred)
                     plt.imshow(show(self.pred, bgr=True))
+                    if self.log_dir is not None:
+                        plt.savefig(os.path.join(self.log_dir, "TrainPred.png"))
             plt.pause(0.001)
 
 #if (self.iteration+1)%self.display_interval == 0:
@@ -202,7 +210,7 @@ class ShowTestPredsCallback(Callback):
         #    show(batch_x[0], None, preds[0], 1024, 768, "", self.batch_num, "Test")
 
 class DisplayAccuracyCallback(Callback):
-    def __init__(self, model, generator=None, generator_class=None, training_generator_class=None, pixel_counts_by_class=defaultdict(lambda:0), eval_interval=50):
+    def __init__(self, model, generator=None, generator_class=None, training_generator_class=None, pixel_counts_by_class=defaultdict(lambda:0), eval_interval=50, log_dir="./"):
         self.generator = generator
         self.generator_class = generator_class
         self.eval_interval = eval_interval
@@ -231,6 +239,7 @@ class DisplayAccuracyCallback(Callback):
         self.training_generator_class = training_generator_class
         self.batch_num = 0
         self.best_macro_fscore = 0.0
+        self.log_dir = log_dir
         self.model = model
 
     # on_batch_end
@@ -268,6 +277,25 @@ class DisplayAccuracyCallback(Callback):
         impath = self.generator_class.last_path
         #if do_show:
         #    show(batch_x[0], batch_y[0], preds[0], self.h, self.w, impath, self.batch_num, do_show=False)
+
+        #if self.training_generator.gt is not None:
+        plt.figure(8)
+        v = show(batch_y[0], bgr=True)
+        plt.imshow(v)
+        #if self.training_generator.image is not None:
+        plt.figure(9)
+        im = batch_x[0]
+        plt.imshow(im)
+        #if self.model is not None:
+
+        plt.figure(10)
+        print "DisplayValidationSamplesCallback input shape", im.shape
+        #self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
+        self.pred = preds[0]
+        print "Pred shape:", self.pred.shape
+        print "Pred min/max:", np.min(self.pred), np.max(self.pred)
+        plt.imshow(show(self.pred, bgr=True))
+        plt.pause(0.001)
 
         print("Computing precisions, recalls, etc.!")
 
@@ -316,7 +344,7 @@ class DisplayAccuracyCallback(Callback):
         precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = cm["precision"], cm["recall"], cm["accuracy"], cm["f1_score"], cm["gt_mass"], cm["true_positives"]
 
         #precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = score(batch_y, preds)
-        
+
         print precisions.shape, recalls.shape, accuracies.shape, f_scores.shape, tot_gt_mass.shape, overall_correct.shape
         if self.training_generator_class is not None:
             self.training_generator_class.class_fscores = f_scores
@@ -435,7 +463,7 @@ class DisplayAccuracyCallback(Callback):
         plt.title('Metric Chart')
         plt.tight_layout()
         plt.pause(0.0001)
-        plt.savefig('LossMetrics.png')
+        plt.savefig(os.path.join(self.log_dir, 'LossMetrics.png'))
 
         print("========== Overall stats: =============")
         print("Average activation:", np.mean(preds), "Max activation:", np.max(preds), "Min activation:", np.min(preds))
@@ -462,7 +490,7 @@ class DisplayAccuracyCallback(Callback):
         plt.tight_layout()
         plt.title('Loss and Metric History')
         plt.pause(0.001)
-        plt.savefig('training.png')
+        plt.savefig(os.path.join(self.log_dir, 'training.png'))
         # Compute Precision, Recall, F-Score, and Pixel accuracy per class.
 
         mem = psutil.virtual_memory()
@@ -471,7 +499,7 @@ class DisplayAccuracyCallback(Callback):
         val_json = {"Loss": self.losses, "Precision":self.prec, "Recall": self.reca, "F-Score": self.fscore, "Accuracy": self.pixacc}
         #print(val_json)
         self.val_json_iters = val_json #.append(val_json)
-        with open("loss_history.json", 'w') as f:
+        with open(os.path.join(self.log_dir, "loss_history.json"), 'w') as f:
             json.dump(self.val_json_iters, f, indent=2)
 
         cv2.waitKey(10)
@@ -534,16 +562,40 @@ class LogTimingCallback(Callback):
         print("Epoch duration:", epoch_duration, "s")
         self.batches_elapsed = 0
 
+def _mkdir(newdir):
+    """works the way a good mkdir should :)
+        - already exists, silently complete
+        - regular file in the way, raise an exception
+        - parent directory(ies) does not exist, make them as well
+    """
+    if os.path.isdir(newdir):
+        pass
+    elif os.path.isfile(newdir):
+        raise OSError("a file with the same name as the desired " \
+                      "dir, '%s', already exists." % newdir)
+    else:
+        head, tail = os.path.split(newdir)
+        if head and not os.path.isdir(head):
+            _mkdir(head)
+        #print("_mkdir %s" % repr(newdir))
+        if tail:
+            os.mkdir(newdir)
+
+
 class TFModelSaverCallback(Callback):
     def __init__(self, model, model_save_path, save_interval=5000, start_iteration=0):
         self.model = model
         self.iteration = start_iteration
         self.model_save_path = model_save_path
         self.save_interval = save_interval
-        
+
     def on_batch_end(self, batch, logs={}):
+        self.iteration += 1
         if self.iteration > 0 and self.iteration % self.save_interval == 0:
             print "Saving model..."
+            dirname = os.path.dirname(self.model_save_path)
+            if not os.path.exists(dirname):
+                _mkdir(dirname)
             self.model.save(self.model_save_path)
 
 class TestModelCallback(Callback):

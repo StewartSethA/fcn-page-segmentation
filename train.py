@@ -27,6 +27,25 @@ from models.model import build_model
 from predict import *
 #############################################################
 
+def _mkdir(newdir):
+    """works the way a good mkdir should :)
+        - already exists, silently complete
+        - regular file in the way, raise an exception
+        - parent directory(ies) does not exist, make them as well
+    """
+    if os.path.isdir(newdir):
+        pass
+    elif os.path.isfile(newdir):
+        raise OSError("a file with the same name as the desired " \
+                      "dir, '%s', already exists." % newdir)
+    else:
+        head, tail = os.path.split(newdir)
+        if head and not os.path.isdir(head):
+            _mkdir(head)
+        #print("_mkdir %s" % repr(newdir))
+        if tail:
+            os.mkdir(newdir)
+
 def train(args):
     batch_size = args.batch_size
     num_classes = args.num_classes
@@ -37,7 +56,7 @@ def train(args):
     model_save_path = args.model_save_path
     model_type = args.model_type
     ds_rate = 1.0
-    
+
     # Index the training set for efficient caching and batching, including class rebalancing.
     print "Training folder", training_folder
     index = index_training_set_by_class(training_folder, num_classes=num_classes)
@@ -47,10 +66,10 @@ def train(args):
     if args.batcher == 'simple':
         training_generator = training_generator_class.generate(in_width)
     elif args.batcher == 'mixed':
-        training_generator = mixed_get_batch([training_generator_class.legacy_get_batch(in_width), training_generator_class.generate(in_width)], [0.1, 0.9]) 
+        training_generator = mixed_get_batch([training_generator_class.legacy_get_batch(in_width), training_generator_class.generate(in_width)], [0.1, 0.9])
     else:
         training_generator = training_generator_class.legacy_get_batch(in_width)
-    
+
     # Optionally include a validation set for display, early stopping, and mini-validation during training.
     # If none is supplied, the training set will be used for real-time display, etc.
     print "Validation folder", validation_folder
@@ -62,8 +81,19 @@ def train(args):
     import psutil
     mem_orig = psutil.virtual_memory().used
     print("VIRTUAL MEMORY BEFORE MODEL CREATION:", mem_orig)
-    
+
+    if not os.path.exists(args.log_dir):
+        _mkdir(args.log_dir)
+
+    print ">>>> Log dir", args.log_dir, "Save path", args.model_save_path
+    if args.log_dir != os.path.dirname(args.model_save_path):
+        args.model_save_path = os.path.join(args.log_dir, args.model_save_path)
+        print "UPDATED", args.model_save_path
+        model_save_path = args.model_save_path
+
     # BUILD the appropriate model, depending on the framework and model construction parameters.
+    if args.framework.lower() == "keras" and not ".h5" in args.load_model_path[-3:]:
+        args.load_model_path = args.load_model_path + ".h5"
     model = build_model(args)
 
     # Now print memory stats, including estimated model size.
@@ -74,35 +104,37 @@ def train(args):
 
     # Print a model summary for debugging.
     print("Model Summary:", model.summary())
-    
+
     # Plot the model as a chart and save to a PNG file
     # TODO Extend TF and PyTorch models to do the same!
     if args.framework.lower() == "keras":
         from keras.utils import plot_model
-        plot_model(model, to_file='model.png')
+        plot_model(model, to_file=os.path.join(args.log_dir, 'model.png'))
 
     # CREATE callbacks.
     callbacks = []
 
     from callbacks import DisplayAccuracyCallback
-    callbacks.append(DisplayAccuracyCallback(model, validation_generator, validation_generator_class, training_generator_class=training_generator_class, pixel_counts_by_class=training_generator_class.dataset_sampler.pixel_counts_byclass, eval_interval=500))
+    callbacks.append(DisplayAccuracyCallback(model, validation_generator, validation_generator_class, training_generator_class=training_generator_class, pixel_counts_by_class=training_generator_class.dataset_sampler.pixel_counts_byclass, eval_interval=args.log_interval, log_dir=args.log_dir))
 
     from callbacks import DisplayTrainingSamplesCallback
-    callbacks.append(DisplayTrainingSamplesCallback(training_generator_class, model=model, interval=100))
+    callbacks.append(DisplayTrainingSamplesCallback(training_generator_class, model=model, interval=args.training_sample_visualization_interval, log_dir=args.log_dir))
 
     if args.framework.lower() == "keras":
+        if not ".h5" in model_save_path[-3:]:
+            model_save_path = model_save_path + ".h5"
         from keras.callbacks import ModelCheckpoint
         save_model_callback = ModelCheckpoint(filepath = model_save_path, verbose=1, save_best_only=True, period=1)
 
         from keras.callbacks import ReduceLROnPlateau
         callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0.00000000001))
-    
+
         #callbacks.append(keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=0, mode='auto'))
     else:
         from callbacks import TFModelSaverCallback
-        save_model_callback = TFModelSaverCallback(model_save_path, model.sess)
+        save_model_callback = TFModelSaverCallback(model, model_save_path, args.model_save_interval)
     callbacks.append(save_model_callback)
-    
+
     from callbacks import LogTimingCallback
     callbacks.append(LogTimingCallback(batch_size))
 
@@ -144,7 +176,7 @@ A Trainer consumes a training dataset of the following format:
 "class_labels": {0: "dotted lines", 1: "handwriting", 2: "machine print", 3: "solid lines", 4: "stamps"}
 "abbrev_class_labels": [0: "DL", 1: "HW", 2: "MP", 3: "LN", 4: "ST"]
 "training_instance_paths":
-    [  
+    [
     "path1",
     "path2",
     ...
@@ -171,4 +203,3 @@ if __name__ == "__main__":
     import numpy as np
     np.random.seed(args.seed)  # for reproducibility
     train(args)
-

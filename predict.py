@@ -73,7 +73,11 @@ def load_gt_mask(base_filename):
 
     return gt_mask
 
-def write_predictions_to_png(predmax, im_path, gt_mask_file, verbose=True):
+def write_predictions_to_pnglayers(preds, output_path, basename, verbose=0):
+    #TODO: Implement me!!!
+    pass
+
+def write_predictions_to_png_indexed(predmax, im_path, gt_mask_file, verbose=True):
     splitext = os.path.splitext(im_path)
     dirname = os.path.dirname(im_path)
     basename = os.path.basename(splitext[0])
@@ -658,9 +662,9 @@ def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, d
         cv2.imwrite(page["image_path"] + "_MP"+ext, densepreds[:,:,self.class_to_num['machprint']])
         cv2.imwrite(page["image_path"] + "_HW"+ext, densepreds[:,:,self.class_to_num['hw']])
         cv2.imwrite(page["image_path"] + "_DL"+ext, densepreds[:,:,self.class_to_num['dotted_lines']])
-        
+
         write_masked_channels(img, densepreds, page["image_path"])
-        
+
         if display:
             cv2.imshow("Dense Averaged Multi-scale predictions", densepreds[:,:,0:3])
             cv2.waitKey(10)
