@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from scipy.interpolate import griddata
 
-def warp_images(img, img2, config={}):
+def warp_images(img, img2, config={}, borderValue=(255,255,255), warp_amount=0.1):
     # TODO: Allow for random variation!!
     random_intervals = config.get("random_intervals", False)
     warp_variance = config.get("warp_variance", -1.0)
@@ -15,7 +15,7 @@ def warp_images(img, img2, config={}):
     else:
         w_mesh_variance = config.get("w_mesh_variance", 1.0) #max(0, self.w_mesh_variance + self.w_mesh_variance * (self.variable_warp_variance * (random.random()-0.5)) * w_mesh_interval / self.w_mesh_interval)
         h_mesh_variance = config.get("h_mesh_variance", 1.0) #max(0, self.h_mesh_variance + self.h_mesh_variance * (self.variable_warp_variance * (random.random()-0.5)) * h_mesh_interval / self.h_mesh_interval)
-
+    warp_variance *= warp_amount
     mesh_interval = config.get("mesh_interval", -1)
     mesh_interval_max = config.get("mesh_interval_max", mesh_interval)
     if mesh_interval_max > mesh_interval:
@@ -89,8 +89,8 @@ def warp_images(img, img2, config={}):
         map_x_32 = convolve2d(map_x_32, kernel)
         map_y_32 = convolve2d(map_y_32, kernel)
 
-    warped = cv2.remap(img, map_x_32, map_y_32, cv2.INTER_LINEAR, borderValue=(255,255,255))
-    warped2 = cv2.remap(img2, map_x_32, map_y_32, cv2.INTER_LINEAR, borderValue=(255,255,255))
+    warped = cv2.remap(img, map_x_32, map_y_32, cv2.INTER_LINEAR, borderValue=borderValue)
+    warped2 = cv2.remap(img2, map_x_32, map_y_32, cv2.INTER_LINEAR, borderValue=borderValue)
 
     width = img.shape[1]
     height = img.shape[0]
@@ -100,14 +100,17 @@ def warp_images(img, img2, config={}):
     pad_b = pad_h - pad_t
     pad_l = pad_w / 2
     pad_r = pad_w - pad_l
-    warped = np.pad(warped, ((pad_t,pad_b), (pad_l, pad_r)), mode='constant', constant_values=0)
+    if len(warped.shape) == 3:
+        warped = np.pad(warped, ((pad_t,pad_b), (pad_l, pad_r), (0,0)), mode='constant', constant_values=0)
+    else:
+        warped = np.pad(warped, ((pad_t,pad_b), (pad_l, pad_r)), mode='constant', constant_values=0)
     if len(warped2.shape) == 3:
         warped2 = np.pad(warped2, ((pad_t,pad_b), (pad_l, pad_r), (0,0)), mode='constant', constant_values=0)
     else:
         warped2 = np.pad(warped2, ((pad_t,pad_b), (pad_l, pad_r)), mode='constant', constant_values=0)
     return warped, warped2
 
-def warp_image(img, config={}):
+def warp_image(img, borderValue=(255,255,255), config={}):
     # TODO: Allow for random variation!!
     random_intervals = config.get("random_intervals", False)
     warp_variance = config.get("warp_variance", -1.0)
@@ -149,7 +152,7 @@ def warp_image(img, config={}):
     h_mesh_interval = h / h_ratio
     ###########################################################################
 
-    w_scale_factor = (np.random.random() * 0.25) + 1.0 - 0.25 / 2.0
+    w_scale_factor = 1.0 #(np.random.random() * 0.25) + 1.0 - 0.25 / 2.0
     w_scale_factor = min(1.0, w_scale_factor)
     c_i = w/2 - np.random.normal(0.25, height_center_variance) * w
 
@@ -194,7 +197,7 @@ def warp_image(img, config={}):
         map_x_32 = convolve2d(map_x_32, kernel)
         map_y_32 = convolve2d(map_y_32, kernel)
 
-    warped = cv2.remap(img, map_x_32, map_y_32, cv2.INTER_LINEAR, borderValue=(255,255,255))
+    warped = cv2.remap(img, map_x_32, map_y_32, cv2.INTER_LINEAR, borderValue=borderValue) #(255,255,255))
     width = img.shape[1]
     height = img.shape[0]
     pad_w = width-warped.shape[1]
@@ -203,5 +206,8 @@ def warp_image(img, config={}):
     pad_b = pad_h - pad_t
     pad_l = pad_w / 2
     pad_r = pad_w - pad_l
-    warped = np.pad(warped, ((pad_t,pad_b), (pad_l, pad_r)), mode='constant', constant_values=0)
+    if len(img.shape) == 2:
+        warped = np.pad(warped, ((pad_t,pad_b), (pad_l, pad_r)), mode='constant', constant_values=1.0)
+    else:
+        warped = np.pad(warped, ((pad_t,pad_b,0), (pad_l, pad_r,0)), mode='constant', constant_values=1.0)
     return warped

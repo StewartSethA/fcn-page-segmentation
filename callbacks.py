@@ -95,24 +95,27 @@ class DisplayTrainingSamplesCallback(Callback):
         if self.batch_num % self.interval == 0:
             print "DisplayTrainingSamplesCallback"
             if self.training_generator.gt is not None:
-                plt.figure(3)
+                plt.figure("Training_GT")
+                plt.clf()
                 v = show(self.training_generator.gt, bgr=True)
-                plt.imshow(v)
+                plt.imshow((v), interpolation='none')
                 if self.log_dir is not None:
                     plt.savefig(os.path.join(self.log_dir, "TrainGT.png"))
             if self.training_generator.image is not None:
-                plt.figure(2)
-                plt.imshow(self.training_generator.image)
+                plt.figure("Training_Image")
+                plt.clf()
+                plt.imshow((self.training_generator.image), interpolation='none')
                 if self.log_dir is not None:
                     plt.savefig(os.path.join(self.log_dir, "TrainImage.png"))
                 if self.model is not None:
                     im = self.training_generator.image
-                    plt.figure(4)
+                    plt.figure("Training_Prediction")
+                    plt.clf()
                     print "DisplayTrainingSamplesCallback input shape", im.shape
                     self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
                     print "Pred shape:", self.pred.shape
                     print "Pred min/max:", np.min(self.pred), np.max(self.pred)
-                    plt.imshow(show(self.pred, bgr=True))
+                    plt.imshow((show(self.pred, bgr=True)), interpolation='none')
                     if self.log_dir is not None:
                         plt.savefig(os.path.join(self.log_dir, "TrainPred.png"))
             plt.pause(0.001)
@@ -257,6 +260,16 @@ class DisplayAccuracyCallback(Callback):
         preds = self.model.predict(batch_x, batch_size=batch_x.shape[0])
         print("Preds shape:", preds.shape)
         print("postprocessing preds!", preds.shape)
+        print("")
+        print("")
+        print("")
+        print("")
+        print("")
+        print("Classwise predicted means:")
+        print(np.mean(preds, axis=(0,1,2)))
+        print("Classwise ground truth means:")
+        print(np.mean(batch_y, axis=(0,1,2)))
+        # return 1
         preds = postprocess_preds(batch_x, preds, batch_y, None, self.pixel_counts_by_class)
         print("done!")
         #scores = self.model.evaluate(batch_x, batch_y, batch_size=batch_x.shape[0])
@@ -279,26 +292,29 @@ class DisplayAccuracyCallback(Callback):
         #    show(batch_x[0], batch_y[0], preds[0], self.h, self.w, impath, self.batch_num, do_show=False)
 
         #if self.training_generator.gt is not None:
-        plt.figure(8)
+        plt.figure("Validation_GT")
+        plt.clf()
         v = show(batch_y[0], bgr=True)
-        plt.imshow(v)
+        plt.imshow((v), interpolation='none')
         #if self.training_generator.image is not None:
-        plt.figure(9)
+        plt.figure("Validation_Image")
+        plt.clf()
         im = batch_x[0]
-        plt.imshow(im)
+        plt.imshow((im), interpolation='none')
         #if self.model is not None:
-
-        plt.figure(10)
+        plt.figure("Validation_Prediction")
+        plt.clf()
         print "DisplayValidationSamplesCallback input shape", im.shape
         #self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
         self.pred = preds[0]
         print "Pred shape:", self.pred.shape
         print "Pred min/max:", np.min(self.pred), np.max(self.pred)
-        plt.imshow(show(self.pred, bgr=True))
+        plt.imshow((show(self.pred, bgr=True)), interpolation='none')
         plt.pause(0.001)
 
         print("Computing precisions, recalls, etc.!")
-
+        #return 2 # 200 MB per call memory leak is coming from up here!
+        # IT WAS THE lack of a call to plt.clf() before rendering a new image! Ugh!
         #predsrgbchannels = multihot_to_multiindexed_rgb(preds[0])
         #cv2.imwrite(impath + "_predsrgbchannels.png", predsrgbchannels)
         #print("Performing HisDoc Evaluation...")
@@ -342,6 +358,10 @@ class DisplayAccuracyCallback(Callback):
 
         cm = CachedMetrics(batch_y[0], preds[0])
         precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = cm["precision"], cm["recall"], cm["accuracy"], cm["f1_score"], cm["gt_mass"], cm["true_positives"]
+        import sys
+        print "Size of CM:", sys.getsizeof(cm)
+        print "Size of self:", sys.getsizeof(self)
+        cm = None
 
         #precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = score(batch_y, preds)
 
@@ -427,7 +447,7 @@ class DisplayAccuracyCallback(Callback):
                     shutil.copy('model_checkpoint.h5', modeldest)
                     modeldest = os.path.join(os.path.dirname(self.training_generator_class.dataset_sampler.image_list[0]), "model_checkpoint_BEST.h5")
 
-        plt.figure(1)
+        plt.figure("Mini-Validation Metrics By Class")
         plt.clf()
         #fig, ax = plt.subplots()
         index = np.arange(preds.shape[-1]+1)
@@ -458,7 +478,9 @@ class DisplayAccuracyCallback(Callback):
         pixacc_rects = plt.bar(index+3*bar_width, acc_means, bar_width, alpha=opacity, color='g', yerr=acc_stds, error_kw=error_config, label="Pixel Accuracy")
         plt.xlabel('Class Number')
         plt.ylabel('Performance Measure')
-        plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, 6, "All"))
+        # TODO: Genericize!
+        plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, "All"))
+        plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, "All"))
         plt.legend()
         plt.title('Metric Chart')
         plt.tight_layout()
@@ -479,7 +501,7 @@ class DisplayAccuracyCallback(Callback):
         self.reca.append(av_rec/preds.shape[-1])
         self.fscore.append(av_fsc/preds.shape[-1])
         self.pixacc.append(av_acc/preds.shape[-1])
-        plt.figure(0)
+        plt.figure("Training Loss and Mini-Validation Metric History")
         plt.clf()
         plt.plot(self.losses, color='xkcd:orange')
         plt.plot(self.smoothedlosses, color='xkcd:teal')
@@ -493,8 +515,11 @@ class DisplayAccuracyCallback(Callback):
         plt.savefig(os.path.join(self.log_dir, 'training.png'))
         # Compute Precision, Recall, F-Score, and Pixel accuracy per class.
 
-        mem = psutil.virtual_memory()
-        print("Memory:", mem)
+        #mem = psutil.virtual_memory()
+        #print("Memory:", mem)
+        #from guppy import hpy
+        #h = hpy()
+        #print h.heap()
 
         val_json = {"Loss": self.losses, "Precision":self.prec, "Recall": self.reca, "F-Score": self.fscore, "Accuracy": self.pixacc}
         #print(val_json)
@@ -502,8 +527,41 @@ class DisplayAccuracyCallback(Callback):
         with open(os.path.join(self.log_dir, "loss_history.json"), 'w') as f:
             json.dump(self.val_json_iters, f, indent=2)
 
-        cv2.waitKey(10)
+        #cv2.waitKey(10)
 
+def display_stats(tensor, name="None", numbins=10):
+    # Show mean, median, stddev, and histogram.
+    # Really, just show a histogram and save it.
+    #fig = plt.figure(name)
+    #hist = np.histogram(tensor, bins=numbins)
+    #plt.clf()
+    #plt.hist(hist, bins=numbins)
+    #plt.savefig(name+".png")
+    #plt.close(fig)
+    #print "Histogram of weights for tensor", name, hist
+    print name, "Mean:", np.mean(tensor), "StdDev:", np.std(tensor), "Median", np.median(tensor)
+
+class DisplayWeightStatsCallback(Callback):
+    def __init__(self, model):
+        self.model = model
+        self.interval = 100
+        self.model.weights_good = True
+        self.iteration = 0
+
+    def on_batch_end(self, batch, logs={}):
+        if self.iteration % self.interval == 0:
+            weights = self.model.get_weights()
+            for i,weight in enumerate(weights):
+                print("Displaying weights for", i)
+                print weight.shape
+                display_stats(weight, "Weight"+str(i)+"_"+str(weight.shape))
+                self.model.weights_good = False
+        self.iteration += 1
+
+
+class DisplayActivationStatsCallback(Callback):
+    def __init__(self, model):
+        self.model = model
 
 class LogMemoryUsageCallback(Callback):
     def __init__(self):

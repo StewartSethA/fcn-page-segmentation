@@ -18,7 +18,7 @@ import multiprocessing
 import time
 import os
 from utils import get_power_of_two_padding
-from gt_loaders.gt_loader import load_gt, index_training_set_by_class
+from gt_loaders import load_gt, index_training_set_by_class
 from preprocessing.data_augmentation import DataAugmenter
 from legacy_training_sample_generators import *
 

@@ -15,7 +15,10 @@ class VariablePlotter():
         self.lastscatters = []
         self.lastvarplots = []
         self.lastconstplots = []
-        
+
+    def clear(self):
+        plt.clf()
+
     def plot_var(self, name, x, y, style, scaletype='symlog', linthreshy=0.000000000001, figure=0):
         plt.figure(figure)
         self.variables[name].append(y)
@@ -23,13 +26,13 @@ class VariablePlotter():
         if x < self.mindomain:
             self.mindomain = x
         if x > self.maxdomain:
-            self.maxdomain = x    
+            self.maxdomain = x
         if not name in self.varorders:
             self.varorders.append(name)
         plt.yscale(scaletype, linthreshy=linthreshy)
         var = plt.plot(self.domains[name], self.variables[name], style, label=name)
         #self.lastvarplots.append(var)
-        
+
 
     def plot_constant(self, name, y, style, scaletype='symlog', linthreshy=1.0, figure=0):
         plt.figure(figure)
@@ -43,16 +46,16 @@ class VariablePlotter():
     def refresh(self, figure=0):
         plt.figure(figure)
         plt.legend(self.varorders, prop={'size':6})
-        plt.pause(0.0001) 
+        plt.pause(0.0001)
         #for plot in self.lastvarplots:
         #    plot.remove()
         #for plot in self.lastconstplots:
         #    plot.remove()
-        
+
     def save(self, name, figure=0):
         plt.figure(figure)
         plt.savefig(name)
-        
+
     def plot_points(self, xs, ys, labels, colors, sizes, alpha, figure=1, xlim=[-10,10], ylim=[-10,10]):
         plt.figure(figure)
         uniqlabels = sorted(set(labels))
@@ -80,8 +83,7 @@ class VariablePlotter():
             l = plt.scatter(x, y, s=s, c=c, alpha=1, edgecolors='none')
             self.lastscatters.append(l)
             legs.append(l)
-            
+
         plt.xlim(xlim[0], xlim[1])
         plt.ylim(ylim[0], ylim[1])
         plt.legend(legs, uniqlabels, scatterpoints=1, prop={'size':6})
-

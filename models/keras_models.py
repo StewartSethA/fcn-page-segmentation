@@ -1057,10 +1057,12 @@ def build_model_functional(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8
     return model #, flatmodel
 
     #num_classes += 1 # TODO: Expand blank to its own class!
-    
+
 def build_keras_model(args):
     from keras.backend.tensorflow_backend import set_session
     import tensorflow as tf
+    from regularizers import *
+    from losses import *
     config = tf.ConfigProto()
     config.gpu_options.per_process_gpu_memory_fraction = 0.40
     set_session(tf.Session(config=config))

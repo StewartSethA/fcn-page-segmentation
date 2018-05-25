@@ -77,6 +77,8 @@ def load_gt_pnglayers(image_path, num_classes=6, dontcare_idx=-1):
     base_path = os.path.splitext(image_path)[0]
     for classnum in classnums:
         gt_layer_path = base_path + "_" + str(classnum) + ".png"
+        if not os.path.exists(gt_layer_path):
+            gt_layer_path = base_path + "_" + str(classnum) + ".jpg"
         if os.path.exists(gt_layer_path):
             gt_layer = cv2.imread(gt_layer_path, 0).astype('float32') / 255.0
             if gt is None:
@@ -253,6 +255,12 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
             print "Using multihot layer loader on", image_path
     else:
         for classnum in range(num_classes):
+            gt_layer_path = image_path.replace(".jpg", "_" + str(classnum) + ".jpg")
+            if os.path.exists(gt_layer_path):
+                if debuglevel > 2:
+                    print "Using png layer loader on", gt_layer_path
+                gt_loader = load_gt_pnglayers
+                break
             gt_layer_path = image_path.replace(".jpg", "_" + str(classnum) + ".png")
             if os.path.exists(gt_layer_path):
                 if debuglevel > 2:
@@ -269,7 +277,7 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
                     print "Using suffix GT loader on ", image_path
                 gt_loader = load_gt_from_suffices
                 break
-            
+
     return load_gt_diskcached(image_path, num_classes=num_classes, gt_loader=gt_loader, dontcare_idx=dontcare_idx, use_disk_cache=use_disk_cache, memory_cache=memory_cache, compress_in_ram=compress_in_ram, downsampling_rate=downsampling_rate, debuglevel=debuglevel)
 
 load_gt = load_gt_automatic

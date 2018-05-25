@@ -78,6 +78,7 @@ def restore_model(sess, loadmodel):
     y_conv = tf.get_collection("logits")[0]
     loss = tf.get_collection("loss")[0]
     train_step = tf.get_collection("train_step")[0]
+    print "Success?"
     return x, y_, y_conv, keep_prob, loss, train_step, saver
 
 # Variable learning rate
@@ -94,14 +95,20 @@ def restore_model(sess, loadmodel):
 
 
 class TFModelKerasStyle:
-    def __init__(self, args):
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.25)
+    def __init__(self, args, profile=False):
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.model_path = args.load_model_path
+        print ""
+        print "TFModelKerasStyle"
+        print args
+        print self.model_path
         width = height = args.crop_size
-        loadmodel = self.model_path + "5000"
-        print "Attempting to load model from path", loadmodel, os.path.exists(loadmodel + ".meta")
-        loadmodel = loadmodel if os.path.exists(loadmodel + ".meta") else None
+        print "Attempting to load model from path", self.model_path, os.path.exists(self.model_path + ".meta")
+        if os.path.exists(self.model_path + ".meta"):
+            pass
+        else:
+            self.model_path = self.model_path + "5000" if os.path.exists(self.model_path + "5000" + ".meta") else None
         # TODO: Prune the following. Which are useless?
         self.class_num_to_symbol = {0:'dotted_lines', 1:'hw', 2:'machprint', 3:'lines', 4:'stamp'}
         self.num_classes = len(self.class_num_to_symbol)
@@ -115,15 +122,24 @@ class TFModelKerasStyle:
         self.max_iterations = 20001
         self.display_interval = 25
         self.batch_size = args.batch_size
-        self.max_height_scale = 4
-        self.min_height_scale = 0.5
+        self.max_height_scale = 1.0#4.0
+        self.min_height_scale = 0.125 #0.5
         self.recognition_scale = 1
         self.width = width
         self.height = height
         self.iteration = 0
         self.display_interval = 25
         self.save_interval = 5000
-        self.x, self.y_, self.y_conv, self.train_step, self.accuracy, self.keep_prob, self.loss, self.saver = create_model(self.sess, model_factory=model, loadmodel=loadmodel, params=self.params, trainable=True, batch_size=self.batch_size, height=self.height, width=self.width)
+        self.profile = profile
+        self.x, self.y_, self.y_conv, self.train_step, self.accuracy, self.keep_prob, self.loss, self.saver = create_model(self.sess, model_factory=model, loadmodel=self.model_path, params=self.params, trainable=True, batch_size=self.batch_size, height=self.height, width=self.width)
+        if profile:
+            for v in tf.trainable_variables():
+                tf.summary.histogram(v.name, v)
+            self.train_writer = tf.summary.FileWriter('./tf_logs/1/train ', self.sess.graph)
+
+
+    def get_weights(self):
+        return self.sess.run(tf.trainable_variables())
 
     def get_batch(self, batch_size=64, input_height=28, input_width=28):
         start_b = 0
@@ -154,13 +170,15 @@ class TFModelKerasStyle:
         print "TRYING TO DO PREDICTION WITH IMAGE OF SIZE", batch.shape
         # TODO: TF is awful! I can't just make things the shape I want!
         #return np.zeros((batch.shape[0], batch.shape[1], batch.shape[2], self.num_classes))
-        
+
         #batch = batch[:, :self.height, :self.width, :]
         if batch.shape[-1] == 3:
             print "Predict Batch shape", batch.shape
             batch = np.reshape(np.mean(batch, axis=-1), (batch_size, batch.shape[1], batch.shape[2], 1))
+        print "Batch stats:", np.mean(batch), np.std(batch), np.min(batch), np.max(batch)
         logits = self.sess.run(self.y_conv, feed_dict={self.x:batch, self.keep_prob: 1.0})
         print logits.shape
+        print "Pred stats:", np.mean(logits), np.std(logits), np.min(logits), np.max(logits)
         return logits
 
     def fit_generator(self, generator=None, steps_per_epoch=None, epochs=1, verbose=1, callbacks=None, validation_data=None, validation_steps=None, class_weight=None, max_queue_size=10, workers=1, use_multiprocessing=False, shuffle=True, initial_epoch=0):
@@ -168,12 +186,13 @@ class TFModelKerasStyle:
             steps_per_epoch = 5000
         self.epoch = initial_epoch
         self.iteration = initial_epoch * steps_per_epoch
-        
+
         while self.epoch < epochs:
+            print "Epoch:", self.epoch
             for step in range(steps_per_epoch):
                 if verbose > 1:
                     print "Training iteration", self.iteration
-            
+
                 if generator is None:
                     batch, targets = self.get_batch(self.batch_size, self.height, self.width)
                     batch = [np.reshape(batch, [-1, self.height, self.width, 1]), targets]
@@ -181,9 +200,14 @@ class TFModelKerasStyle:
                     batch, targets = generator.next()
                     if batch.shape[-1] == 3:
                         batch = np.reshape(np.mean(batch, axis=-1), (-1, self.height, self.width, 1))
-                
-                _, loss = self.sess.run([self.train_step, self.loss], feed_dict={self.x:batch, self.y_:targets, self.keep_prob: self.dropout})
-                
+
+                if self.profile:
+                    merge_reports = tf.summary.merge_all()
+                    _, loss, summary = self.sess.run([self.train_step, self.loss, merge_reports], feed_dict={self.x:batch, self.y_:targets, self.keep_prob: self.dropout})
+                    self.train_writer.add_summary(summary, self.iteration)
+                else:
+                    _, loss = self.sess.run([self.train_step, self.loss], feed_dict={self.x:batch, self.y_:targets, self.keep_prob: self.dropout})                    
+
                 # Call all of the callbacks!
                 logs = {"loss":loss}
                 for callback in callbacks:
@@ -194,16 +218,15 @@ class TFModelKerasStyle:
                 callback.on_epoch_end(self.epoch, logs=logs)
             self.epoch += 1
         pass
-    
+
     def count_params(self):
         return 0
-        
+
     def summary(self):
         return "Model Summary: Not Implemented"
-        
+
     def save(self, filepath):
         save_model(self.sess, "./" + filepath + str(self.iteration))
 
 def build_model(args):
     return TFModelKerasStyle(args)
-

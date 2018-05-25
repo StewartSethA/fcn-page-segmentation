@@ -1,10 +1,11 @@
+# Old HBA code. Blah. #TODO: GO through this and salvage anything useful.
 import numpy as np
 import os
 import json
 import cv2
-from utils import *
+from models.nn_utils import *
 
-from visuals import *
+from visuals.visuals import *
 from postprocessing import *
 
 from multiprocessing import Pool
@@ -14,25 +15,7 @@ import time
 
 import re
 from joblib import Parallel, delayed
-
-def _mkdir(newdir):
-    """works the way a good mkdir should :)
-        - already exists, silently complete
-        - regular file in the way, raise an exception
-        - parent directory(ies) does not exist, make them as well
-    """
-    if os.path.isdir(newdir):
-        pass
-    elif os.path.isfile(newdir):
-        raise OSError("a file with the same name as the desired " \
-                      "dir, '%s', already exists." % newdir)
-    else:
-        head, tail = os.path.split(newdir)
-        if head and not os.path.isdir(head):
-            _mkdir(head)
-        #print("_mkdir %s" % repr(newdir))
-        if tail:
-            os.mkdir(newdir)
+from utils import _mkdir
 
 def get_lines_and_masks(linechunk):
     yxs = np.zeros((len(linechunk),2),dtype=np.uint16)
@@ -73,7 +56,15 @@ def load_gt_mask(base_filename):
 
     return gt_mask
 
-def write_predictions_to_png(predmax, im_path, gt_mask_file, verbose=True):
+def write_predictions_to_pnglayers(preds, output_path, basename, verbose=0):
+    #TODO: Implement me!!!
+    for channel in range(preds.shape[-1]):
+        layer = preds[:,:,channel]
+        cv2.imwrite(os.path.join(output_path, basename + "_" + str(channel) + ".jpg"), layer*255)
+    vis = vis_img(preds, bgr=False)
+    cv2.imwrite(os.path.join(output_path, basename + "_" + "SS_RGB" + ".jpg"), vis*255)
+
+def write_predictions_to_png_indexed(predmax, im_path, gt_mask_file, verbose=True):
     splitext = os.path.splitext(im_path)
     dirname = os.path.dirname(im_path)
     basename = os.path.basename(splitext[0])
@@ -347,7 +338,7 @@ def write_preds(queue):
                 #print(os.getpid(), "Exiting...")
                 return
             #print(os.getpid(), "got", item[1])
-            write_predictions_to_png(*item)
+            write_predictions_to_pnglayers(*item)
             time.sleep(1)
     except Exception as e:
         print(e)
@@ -356,9 +347,15 @@ def write_preds(queue):
 #    gt_mask = np.clip(cv2.resize(gt_mask, (0,0), fx=1.0/testscale, fy=1.0/testscale)[:orig_image_shape[0],:orig_image_shape[1]]*255, 0, 1)
 #    if pad_x != 0 or pad_y != 0:
 #        gt_mask = np.pad(gt_mask, [(0,pad_y),(0, pad_x)], mode='constant')
-
 # TODO: Make initial or large-template kernels zero-mean! This will help gradients go where they need to go.
-def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, do_median=False, pixel_counts_byclass=None, multiprocess=False):
+def TestModel(model_basepath=None, model=None, testfolder="./", output_folder="./", testscale=1.0, do_median=False, pixel_counts_byclass=None, multiprocess=False, verbose_level=0):
+    from data_loaders.data_loaders import WholeImageOnlyBatcher
+    from data_loaders.utils import get_power_of_two_padding
+    import sys
+    sys.path.append("../")
+    from utils import mkdir_p
+    mkdir_p(output_folder)
+
     if multiprocess:
         work_queue = multiprocessing.Queue()
         worker_pool = multiprocessing.Pool(8, write_preds, (work_queue,))
@@ -401,6 +398,10 @@ def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, d
     ip = 0
     ok = False
     for im_path in test_filenames:
+        splitext = os.path.splitext(im_path)
+        dirname = os.path.dirname(im_path)
+        basename = os.path.basename(splitext[0])
+
         #if "Book4" in im_path and not (ok or "459" in im_path):
         #     continue
         #ok = True
@@ -412,6 +413,10 @@ def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, d
         if len(image.shape) < 3:
             image = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
         print("Image size:", image.shape)
+
+        if verbose_level > 0:
+            cv2.imshow('Inferencing on image', image)
+            cv2.waitKey(5)
 
         # DISABLED dynamic resize for test images.
         #if testscale != 1.0:
@@ -457,7 +462,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, d
             print("Pred minmax BEFORE postprocess", np.min(pred), np.max(pred))
             #pred = postprocess_preds(image, pred, gt_mask=None, pixel_counts_byclass=pixel_counts_byclass)
             print("Pred minmax after postprocess", np.min(pred), np.max(pred))
-            show(image[0], None, pred[0], 1024, 1024, im_path)
+            #show(image[0], None, pred[0], 1024, 1024, im_path)
 
             #predmaxes = np.argmax(pred[0], axis=-1)
 
@@ -475,7 +480,9 @@ def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, d
         if False:
             predsrgbchannels = preds[:int(orig_image_shape[0]*testscale), :int(orig_image_shape[1]*testscale)]
             predsrgbchannels = multihot_to_multiindexed_rgb(predsrgbchannels)
-            cv2.imwrite(im_path + "_predsrgbchannels.png", predsrgbchannels)
+            cv2.imwrite(im_path.replace(test_folder, output_folder) + "_predsrgbchannels.png", predsrgbchannels)
+
+        write_predictions_to_pnglayers(preds, output_folder, basename)
 
         ip += 1
     print("FINISHED inference. Waiting for workers to complete...")
@@ -486,3 +493,184 @@ def TestModel(model_basepath=None, model=None, testfolder="./", testscale=1.0, d
         print("Close instruction sent.")
         worker_pool.join()
         print("All workers finished.")
+
+    # Recursive recognition starting at the whole page level.
+    def recognize(self, page):
+        # Slice up image into regions and make dense predictions for each region!!!
+        img = cv2.imread(page['image_path'], 0)
+        display = False
+        if display:
+            output = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+        if self.recognition_scale != 1:
+            img = cv2.resize(img, (int(img.shape[1]*self.recognition_scale), int(img.shape[0]*self.recognition_scale)))
+        confident_matches = []
+        import random
+        # Now for the fun part. Display the image, show bounding boxes, and show what is recognized in each of the boxes!!!!
+        width = self.width
+        height = self.height
+        num_classes = self.num_classes
+
+        #for randpc in range(max_attempts):
+        # Start with zoomed out version.
+        # Slice into overlapping quadrants. Find out what each one is.
+        # Zoom in as appropriate.
+        # VERY FAST!!! DO These in batches!!!
+
+        num_dwn = 1 if self.height < 100 else 0
+        num_up = 0
+        orig_img = img
+        img_pyramid = []
+        if num_up == 1:
+            img_pyramid.append(cv2.pyrUp(orig_img))
+        img_pyramid.append(img)
+        for im in range(num_dwn):
+            img_pyramid.append(cv2.pyrDown(img_pyramid[-1]))
+
+        do_offsets = True
+        densepreds = np.zeros((img.shape[0], img.shape[1], num_classes))
+        tot_regions = 0
+        regions_drawn = 0
+        scale = 2.0 ** (num_up+1)
+        tot_masks = len(img_pyramid) + 1
+
+        for img in img_pyramid:
+            scale /= 2.0
+            output = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+            div=1 # 4
+            num_in_batch = 0
+            gt_label = np.zeros((self.batch_size, height, width, num_classes))
+            im_batch = np.zeros((self.batch_size, height, width, 1))
+            xys = []
+            offx = 0
+            offy = 0
+            offsets = [(offx, offy)]
+
+            if scale == 1 and do_offsets:
+                offx = width/8
+                offy = height/8
+                offsets.append((offx, offy))
+                offx = width/4
+                offy = height/4
+                offsets.append((offx, offy))
+                offx = 3*width/8
+                offy = 3*height/8
+                offsets.append((offx, offy))
+                #offx = -width/4
+                #offy = -height/4
+                #offsets.append((offx, offy))
+            wait=50
+            for offx,offy in offsets:
+                for randy in np.arange(offx,img.shape[0],height/div):
+                    if display:
+                        overlay = output.copy() #cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+                    for randx in np.arange(offy,img.shape[1],width/div):
+
+                        #print randpc, "/", max_attempts
+                        #randx = random.randint(0,img.shape[1]-28)
+                        #randy = random.randint(0,img.shape[0]-28)
+                        #overlay.fill(0)
+                        #cv2.rectangle(overlay, (randx, randy), (randx+width, randy+height), (255, 0, 0), 1)
+
+
+                        crop = img[randy:randy+height,randx:randx+width]
+                        if crop.shape[:2] != (self.height, self.width):
+                            crop = scale_pad_and_center(crop, height, width, do_center=False)
+                        crop = crop.astype('float32')
+                        #clasnum = random.randint(0,3)
+                        #clas = self.class_num_to_symbol[clasnum]
+                        #crop, gtcrop = self.class_training_exemplar_generators[clas](self.img, self.mask, maskval=0, numclasses=4, label=clasnum, minsize=self.height/4, maxsize=self.height*4, height=self.height, width=self.width, maskchannel=clasnum)
+
+                        im_batch[num_in_batch] = np.reshape(crop, [height, width, 1])/255.0
+                        xys.append((randx, randy))
+                        #print randx, randy
+                        num_in_batch += 1
+                        tot_regions += 1
+
+                        if num_in_batch == self.batch_size or (randy >= img.shape[0]-height-1 and randx >= img.shape[1]-width-1):
+                            #print im_batch.shape, gt_label.shape
+                            # RUN RUN RUN RUN RUN RUN RUN !!!!!!!
+                            recs = self.sess.run(self.y_conv, feed_dict={self.x:1.0-im_batch, self.y_:gt_label, self.keep_prob:1.0})
+                            #print "Ran recognition batch:", recs.shape
+                            regions_drawn += len(xys)
+                            for b in range(len(xys)): #range(recs.shape[0]):
+                                #rec = recs[b][13][13]
+                                #print rec.shape
+                                #recInd = np.argmax(rec[0:12])
+                                #angleInd = np.argmax(rec[12:16])
+                                #angle = angleInd * 90
+                                #recChar = str(recInd)
+                                r = recs[b]
+                                #cv2.imshow('recognized_patch', r)
+                                #cv2.waitKey(10)
+                                #cv2.imshow('patch_gt', gtcrop)
+                                #cv2.waitKey(10)
+
+                                #cv2.imshow('original_patch', im_batch[b])
+                                #cv2.waitKey(wait)
+                                rx, ry = xys[b]
+                                #print scale, ry, ry+int(height/scale), rx, rx+int(width/scale)
+                                h,w,_ = densepreds[int(ry/scale):int((ry+height)/scale),int(rx/scale):int((rx+width)/scale),:].shape
+                                #try:
+                                densepreds[int(ry/scale):int((ry+height)/scale),int(rx/scale):int((rx+width)/scale),:] += cv2.resize(r, (int(height/scale), int(width/scale)), interpolation=cv2.INTER_LINEAR)[0:h,0:w,:] # Add into image sum.
+                                #except:
+                                #    pass
+                                if display:
+                                    for px in range(r.shape[1]):
+                                        for py in range(r.shape[0]):
+                                            rec = r[py][px]
+                                            recInd = np.argmax(rec)
+                                            if rec[recInd] > 0.0:
+                                                confColor = int(255.0*rec[recInd])
+                                                if self.class_num_to_symbol[recInd] == 'blank':
+                                                    cv2.rectangle(overlay, (rx+px, ry+py), (rx+px, ry+py), (confColor, confColor, confColor), -1) # Blank is white
+                                                elif self.class_num_to_symbol[recInd] == 'hw':
+                                                    cv2.rectangle(overlay, (rx+px, ry+py), (rx+px, ry+py), (0, confColor, 0), -1) # Handwriting is green
+                                                elif self.class_num_to_symbol[recInd] == 'machprint':
+                                                    cv2.rectangle(overlay, (rx+px, ry+py), (rx+px, ry+py), (0, 0, confColor), -1) # Machine Print is red
+                                                elif self.class_num_to_symbol[recInd] == 'lines':
+                                                    cv2.rectangle(overlay, (rx+px, ry+py), (rx+px, ry+py), (confColor, 0, 0), -1) # Lines are blue
+                                            #else:
+                                            #    cv2.rectangle(overlay, (rx+px, ry+py), (rx+px, ry+py), (0, 0, 0), -1) # Unk is black
+
+                            #print rec
+                            if display:
+                                alpha = 0.5
+                                cv2.addWeighted(overlay, alpha, output, 1.0-alpha, 0, output)
+                                cv2.imshow('ImageRec', output)
+                                cv2.waitKey(10)
+
+                            num_in_batch = 0
+                            gt_label = np.zeros((self.batch_size, height, width, num_classes))
+                            im_batch = np.zeros((self.batch_size, height, width, 1))
+                            xys = []
+        print tot_regions, "Total regions recognized", regions_drawn, "drawn"
+        #blurred = cv2.blur(output, (2*height/div, 2*width/div))
+        #cv2.imshow('Blurred', blurred)
+        densepreds = densepreds / tot_masks
+        ext = ".jpg"
+        densepredscopy = np.copy(densepreds)
+        densepredscopy[:,:,0] += densepredscopy[:,:,self.class_to_num['stamp']]/2.0# Blue+Red channel also gets stamps.
+        densepredscopy[:,:,2] += densepredscopy[:,:,self.class_to_num['stamp']]/2.0
+        # Red+Green (Yellow) channel also gets underlines.
+        densepredscopy[:,:,1] += densepredscopy[:,:,self.class_to_num['lines']]/2.0
+        densepredscopy[:,:,2] += densepredscopy[:,:,self.class_to_num['lines']]/2.0
+        densepredscopy = (np.clip(densepredscopy[:,:,:3], 0, 1)*255.0).astype('uint8')
+        for i in range(10):
+            print ""
+        print page["image_path"]
+        oimp = page["image_path"].replace(test_folder, output_folder)
+        cv2.imwrite(oimp + "_SS_RGB"+ext, densepredscopy)
+        densepreds = (np.clip(densepreds[:,:,:], 0, 1)*255.0).astype('uint8')
+        cv2.imwrite(oimp + "_LN"+ext, densepreds[:,:,self.class_to_num['lines']])
+        cv2.imwrite(oimp + "_ST"+ext, densepreds[:,:,self.class_to_num['stamp']])
+        cv2.imwrite(oimp + "_MP"+ext, densepreds[:,:,self.class_to_num['machprint']])
+        cv2.imwrite(oimp + "_HW"+ext, densepreds[:,:,self.class_to_num['hw']])
+        cv2.imwrite(oimp + "_DL"+ext, densepreds[:,:,self.class_to_num['dotted_lines']])
+
+        write_masked_channels(img, densepreds, oimp)
+
+        if display:
+            cv2.imshow("Dense Averaged Multi-scale predictions", densepreds[:,:,0:3])
+            cv2.waitKey(10)
+        print "Done recognizing."
+        return densepreds

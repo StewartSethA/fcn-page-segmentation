@@ -38,13 +38,14 @@ def bleu_score_transcription(prediction, gt):
         score = corpus_bleu(references, candidates, weights=[1.0/max_ngram]*max_ngram)
         print("Max N-gram length:", max_ngram, "Cumulative BLEU Score:", score)
         scores.append(score)
+    plt.clf()
     plt.plot(range(1,50), scores, label="Cumulative BLEU Score")
     #ax = plt.figure().add_subplot(111)
     plt.xlabel = "Maximum N-gram length"
     plt.ylabel = "Cumulative BLEU Score"
     plt.show()
     plt.savefig(sys.argv[1]+"_bleuscores.png")
-    
+
 def box_iou(b1, b2, generosity=100):
     #print("Being GENEROUS!")
     g=generosity
@@ -74,8 +75,8 @@ def box_iou(b1, b2, generosity=100):
         iou = float(a_intersection) / a_union
         return iou
 
-# TODO: Build a textual precision (based on 1.0-insertions/N) and textual recall (based on 1.0-deletions/N) measure for 
-# text recognition. A third metric, also multiplied, could be textual confusion (based on 1.0-substitutions/N). 
+# TODO: Build a textual precision (based on 1.0-insertions/N) and textual recall (based on 1.0-deletions/N) measure for
+# text recognition. A third metric, also multiplied, could be textual confusion (based on 1.0-substitutions/N).
 # Taking a 3-way harmonic mean of these might get a good estimate of how biased the model is towards precision, recall,
 # and substitution.
 
@@ -84,13 +85,13 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
     '''
     Returns a Character Error Rate (CER) in the range 0.0-1.0 based on the alignment of bounding
     boxes in the prediction against bounding boxes in the ground truth.
-    
+
     Args:
         gt_boxes : a list or tuple of boxes specified by [left, top, right, bottom] integer pixel coordinates.
         gt_texts : a list of strings containing ground truth box transcriptions.
         pred_boxes : a list or tuple of boxes specified by [left, top, right, bottom] integer pixel coordinates.
         pred_texts : a list of strings containing predicted box transcriptions.
-    
+
     Returns:
         Average Character Error Rate in range 0.0-1.0,
         Average Word-length-normalized Character Error Rate in range 0.0-1.0,
@@ -126,7 +127,7 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
                 npbd[p] = pred_box
         pred_boxdict = npbd
         print "Pruned items from pred boxdict:", len(pred_boxdict), len(npbd)
-    
+
     #overlap_scores = np.zeros((len(gt_texts), len(pred_texts)))
     matched_idxs = {}
     overlap_ratio_to_pairs = []
@@ -176,22 +177,22 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
         paired_transcription_cers.append(ptc)
         print score, ptc, gt, pred
     print("Length of paired transcription CERS:", len(paired_transcription_cers))
-    
+
     for pi in not_taken_pi:
         print "Unaligned pred:", pi, pred_texts[pi], pred_boxes[pi]
 
     for gti in not_taken_gti:
         print "Unaligned GT:", gti, gt_texts[gti], gt_boxes[gti]
-    
+
     print "Aligned box pairs", len(paired_transcription_cers), "gt boxes", len(gt_boxdict), "pred boxes", len(pred_boxdict)
     #print "Unaligned GT boxes", len(not_taken_gti)
     #print "Unaligned Pred boxes", len(not_taken_pi)
-    
+
     all_transcription_errors = list(paired_transcription_cers)
     all_transcription_error_weights = [float(len(gt_texts[p[0]])) for p in paired_boxes]
     weighted_cer = sum([all_transcription_errors[i]*all_transcription_error_weights[i] for i in range(len(all_transcription_errors))]) / sum(all_transcription_error_weights)
     #print "ATEW", len(all_transcription_error_weights)
-    
+
     unaligned_pred_cers = [1.0 for i in not_taken_pi]
     unaligned_gt_cers = [1.0 for i in not_taken_gti]
     all_transcription_errors.extend(unaligned_pred_cers)
@@ -202,7 +203,7 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
     all_transcription_error_weights.extend(gt_weights)
     #print len(all_transcription_error_weights)
     weighted_all = sum([all_transcription_errors[i]*all_transcription_error_weights[i] for i in range(len(all_transcription_errors))]) / (sum(all_transcription_error_weights) - sum(pred_weights))
-    
+
     total_predicted_chars = sum([len(pred_texts[i]) for i in pred_boxdict.keys()])
     total_gt_chars = sum([len(gt_texts[i]) for i in gt_boxdict.keys()])
     unaligned_pred_chars = sum(pred_weights)
@@ -225,7 +226,7 @@ if __name__ == "__main__":
         conf = float(sys.argv[3])
     case_sense=True
     include_punctuation=True
-    
+
     from OCR_google_vision_api import convert_google_api_json_to_bboxes_and_transcriptions
     gtbb, gtt, _, _ = convert_google_api_json_to_bboxes_and_transcriptions(gt_json, confidence_threshold=conf)
     prbb, prt, _, _ = convert_google_api_json_to_bboxes_and_transcriptions(pred_json, confidence_threshold=conf)
@@ -241,4 +242,3 @@ if __name__ == "__main__":
     print("Matched, Document CER:", weighted_cer)
     print("All boxes, Word CER:", avg_all)
     print("All boxes, Document CER:", weighted_all)
-    

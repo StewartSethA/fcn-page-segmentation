@@ -4,25 +4,17 @@ import cv2
 import sys
 import os
 try:
-    from data_loaders.gt_loaders.gt_loader import *
+    from data_loaders.gt_loaders import *
     from visuals.visuals import *
 except ImportError:
     sys.path.append('../../')
-    from data_loaders.gt_loaders.gt_loader import *
+    from data_loaders.gt_loaders import *
     from visuals.visuals import *
 
 import shutil
-import errno    
+import errno
 
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
-
+from utils import mkdir_p
 
 if __name__ == "__main__":
     crop_policy = "equal_length"
@@ -33,21 +25,21 @@ if __name__ == "__main__":
         img = cv2.imread(jpg)
         base = os.path.basename(jpg).replace(".jpg", "")
         shape = img.shape
-        
+
         gt = load_gt(jpg)
-        
+
         for subdiv_amt in subdivision_amounts:
-            output_dir = os.path.join(data_dir, "subdivs_"+str(subdiv_amt))
+            output_folder = os.path.join(data_dir, "subdivs_"+str(subdiv_amt))
             h = shape[0] / subdiv_amt
             w = shape[1] / subdiv_amt
-            mkdir_p(output_dir)
+            mkdir_p(output_folder)
             quadrant_with_most_hw_plus_mp_pixels = (0,0)
             most_hw_plus_mp_pixels = 0
             for x in range(subdiv_amt):
                 for y in range(subdiv_amt):
                     l,u = x*w, y*h
                     r,b = (x+1)*w, (y+1)*h
-                    output_file = os.path.join(output_dir, base + "_" + str(x) + "_" + str(y))
+                    output_file = os.path.join(output_folder, base + "_" + str(x) + "_" + str(y))
                     out_jpg = output_file + ".jpg"
                     # Create and save each of the subcrops
                     out_crop = img[u:b, l:r, :]
@@ -70,15 +62,14 @@ if __name__ == "__main__":
             x,y = quadrant_with_most_hw_plus_mp_pixels
             best_quadrant_base = base + "_" + str(x) + "_" + str(y)
             # Now move best quadrant out for training
-            train_dir = output_dir + "_train"
+            train_dir = output_folder + "_train"
             mkdir_p(train_dir)
-            
-            src_jpg = os.path.join(output_dir, best_quadrant_base + ".jpg")
+
+            src_jpg = os.path.join(output_folder, best_quadrant_base + ".jpg")
             dst_jpg = os.path.join(train_dir, best_quadrant_base + ".jpg")
             shutil.move(src_jpg, dst_jpg)
             for c in range(gt.shape[-1]):
-                src_png = os.path.join(output_dir, best_quadrant_base + "_" + str(c) + ".png")
+                src_png = os.path.join(output_folder, best_quadrant_base + "_" + str(c) + ".png")
                 dst_png = os.path.join(train_dir, best_quadrant_base + "_" + str(c) + ".png")
                 if os.path.exists(src_png):
                     shutil.move(src_png, dst_png)
-

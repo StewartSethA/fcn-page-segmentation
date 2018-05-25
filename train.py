@@ -5,9 +5,6 @@ if not dir_path in sys.path:
 
 #############################################################
 # Parse command-line arguments.
-# Batch size is small for a low-memory GPU. It can be increased,
-# but generally smaller batch sizes lead to faster convergence
-# (more parameter updates per unit computation), so it may be fine to keep this low.
 from argparser import parse_args
 
 #############################################################
@@ -25,26 +22,8 @@ from data_loaders.training_sample_generators import *
 from collections import defaultdict
 from models.model import build_model
 from predict import *
+from utils import _mkdir
 #############################################################
-
-def _mkdir(newdir):
-    """works the way a good mkdir should :)
-        - already exists, silently complete
-        - regular file in the way, raise an exception
-        - parent directory(ies) does not exist, make them as well
-    """
-    if os.path.isdir(newdir):
-        pass
-    elif os.path.isfile(newdir):
-        raise OSError("a file with the same name as the desired " \
-                      "dir, '%s', already exists." % newdir)
-    else:
-        head, tail = os.path.split(newdir)
-        if head and not os.path.isdir(head):
-            _mkdir(head)
-        #print("_mkdir %s" % repr(newdir))
-        if tail:
-            os.mkdir(newdir)
 
 def train(args):
     batch_size = args.batch_size
@@ -56,6 +35,12 @@ def train(args):
     model_save_path = args.model_save_path
     model_type = args.model_type
     ds_rate = 1.0
+
+    print ""
+    print "Using framework", args.framework
+    print "Epochs:", args.epochs
+    print "Steps per epoch:", args.steps_per_epoch
+    print ""
 
     # Index the training set for efficient caching and batching, including class rebalancing.
     print "Training folder", training_folder
@@ -135,6 +120,9 @@ def train(args):
         save_model_callback = TFModelSaverCallback(model, model_save_path, args.model_save_interval)
     callbacks.append(save_model_callback)
 
+    from callbacks import DisplayWeightStatsCallback
+    callbacks.append(DisplayWeightStatsCallback(model))
+
     from callbacks import LogTimingCallback
     callbacks.append(LogTimingCallback(batch_size))
 
@@ -160,43 +148,20 @@ def train(args):
     # Average time in seconds per image of validation inference
     # Average time in seconds per pixel of validation inference
     # Average change in loss per training sample seen
-    # Average time in seconds per training sample/batch/pixel
 
     # PERFORM TRAINING!!!!
     print("Training!")
-    model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=5000, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
-
+    try:
+        model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
+    except Exception as ex:
+        print "Exception caught!"
+        print ex
+    print "Training is COMPLETE."
+    for i in range(100):
+        print ""
     #testmodelcb = TestModelCallback(model, save_basepath="best_model", testfolder=testfolder, testscale=1.0)
     #callbacks.append(testmodelcb)
     #TODO: callbacks.append(TensorBoardWrapper(validation_generator, nb_steps=1, log_dir='./tensorboard_logs', histogram_freq=1, write_graph=True)) #, write_images=True, embeddings_freq=1, write_grads=True)) #, write_grads=True, write_images=True, embeddings_freq=1, embeddings_layer_names=None, embeddings_metadata=None))
-
-'''
-A Trainer consumes a training dataset of the following format:
-{
-"class_labels": {0: "dotted lines", 1: "handwriting", 2: "machine print", 3: "solid lines", 4: "stamps"}
-"abbrev_class_labels": [0: "DL", 1: "HW", 2: "MP", 3: "LN", 4: "ST"]
-"training_instance_paths":
-    [
-    "path1",
-    "path2",
-    ...
-    ]
-"training_gt_paths":
-    [
-    "gt_path1",
-    "gt_path2",
-    ...
-    ]
-"training_instance_dirs":
-    [
-    "dir1",
-    "dir2",
-    ...
-    ]
-
-
-}
-'''
 
 if __name__ == "__main__":
     args = parse_args()

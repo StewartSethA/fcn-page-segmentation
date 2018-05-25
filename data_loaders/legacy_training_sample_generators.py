@@ -381,7 +381,9 @@ def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0
         region = np.zeros((size,size))
     elif len(img.shape) == 3:
         region = np.zeros((size,size,img.shape[-1]))
-    region.fill(1.0)
+
+    #region.fill(1.0)
+    region.fill(np.random.random())
     if len(img.shape) == 2:
         region[pad_u:pad_u+b-u,pad_l:pad_l+r-l] = img[u:b,l:r]
     elif len(img.shape) == 3:
@@ -567,6 +569,203 @@ def pad_and_center(sample, height=28, width=28, pad_value=0, mode='constant', do
     #cv2.waitKey(1000)
     #print sample.shape
     return sample
+
+if False:
+    import string_utils
+    def char_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        wordnum = get_word_with_charsegs(page)
+        gt = page['gt_as_wordlist'][wordnum]
+        bbox = page['bboxes'][wordnum]
+        charsegs = page['bbox_charsegs'][wordnum]
+        charnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
+        left = charsegs[charnum-1] + bbox[0][0] if charnum > 0 else bbox[0][0]
+        right = charsegs[charnum] + bbox[0][0] if charnum < len(charsegs) else bbox[1][0]
+        sample = img[bbox[0][1]:bbox[1][1],left:right]
+        #cv2.imshow('Sample Orig', sample)
+        #cv2.waitKey(1000)
+        sample = scale_pad_and_center(sample, height, width)
+        gt = gt[charnum]
+
+        #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
+        #print "Seth", len(char_to_idx), gt, encoded_gt.shape
+        #encoded_gt = np.pad(encoded_gt, (0,extra_classes), mode='constant', constant_values=0)
+        #print "Seth", len(char_to_idx), gt, encoded_gt.shape
+        # Append character density map here!
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[char_to_idx[gt]] = 1.0
+
+        return sample, encoded_gt
+
+    def interchar_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        wordnum = get_word_with_charsegs(page, 1)
+        gt = page['gt_as_wordlist'][wordnum]
+        bbox = page['bboxes'][wordnum]
+        charsegs = page['bbox_charsegs'][wordnum]
+        segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
+        #print segnum, len(charsegs)
+        left = max(0, charsegs[segnum] + bbox[0][0] - width/2)
+        right = min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] + width/2)
+        sample = img[bbox[0][1]:bbox[1][1],left:right]
+        sample = scale_pad_and_center(sample, height, width)
+        gt = ""
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)] = 1.0 # Set class to interchar
+        # Append character density map here!
+        return sample, encoded_gt
+
+    def interword_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        wordnum = get_word_with_charsegs(page, 1)
+        gt = page['gt_as_wordlist'][wordnum]
+        bbox = page['bboxes'][wordnum]
+        charsegs = page['bbox_charsegs'][wordnum]
+        segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
+        left = max(0, charsegs[segnum] + bbox[0][0] - width/2)
+        right = min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] + width/2)
+        sample = img[bbox[0][1]:bbox[1][1],left:right]
+        sample = scale_pad_and_center(sample, height, width)
+        gt = ""
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)] = 1.0 # Set class to interchar
+        # Append character density map here!
+        return sample, encoded_gt
+
+    def multichar_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        wordnum = get_word_with_charsegs(page, 1)
+        gt = page['gt_as_wordlist'][wordnum]
+        bbox = page['bboxes'][wordnum]
+        charsegs = page['bbox_charsegs'][wordnum]
+        segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
+        left = bbox[0][0] #max(0, charsegs[segnum] + bbox[0][0] - width/2)
+        right = bbox[1][0]#min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] - width/2)
+        sample = img[bbox[0][1]:bbox[1][1],left:right]
+        sample = scale_pad_and_center(sample, height, width)
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)+1] = 1.0 # Set class to multichar
+        #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
+        # Append character density map here!
+        return sample, encoded_gt
+
+    def interline_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        wordnum = get_word_with_charsegs(page, 0)
+        gt = page['gt_as_wordlist'][wordnum]
+        bbox = page['bboxes'][wordnum]
+        charsegs = page['bbox_charsegs'][wordnum]
+        segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
+        left = bbox[0][0] #max(0, charsegs[segnum] + bbox[0][0] - width/2)
+        right = bbox[1][0]#min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] - width/2)
+        offset = random.randint(height/4,height/2+1)
+        direct = -1 if random.random() < 0.5 else 1
+        top = max(0, bbox[0][1]+offset*direct)
+        bottom = max(1, bbox[1][1]+offset*direct)
+        sample = img[top:bottom,left:right]
+        #print sample.shape
+        sample = scale_pad_and_center(sample, height, width)
+        #print sample.shape
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)+2] = 1.0 # Set class to interline
+        #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
+        # Append character density map here!
+        return sample, encoded_gt
+
+    def multiline_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        # Sample lots of bboxes until one spanning multiple lines is found
+        captured = False
+        tries = 0
+        max_tries = 100
+        avg_height = 0
+        num_bboxes = 10
+        for i in range(num_bboxes):
+            bbox = random.choice(page['bboxes'])
+            avg_height += (bbox[1][1] - bbox[0][1])
+        avg_height /= num_bboxes
+        minheight = int(avg_height * 2)
+        maxheight = img.shape[1]
+        ht = random.randint(minheight, maxheight)
+        while not captured and tries < max_tries:
+            left = random.randint(0, max(1, img.shape[1]-ht))
+            top = random.randint(0, max(1, img.shape[0]-ht))
+            bottom = min(top + ht, img.shape[0]-1)
+            right = min(left + ht, img.shape[1]-1)
+            bottomRow = -1
+            for bbox in page['bboxes']:
+                brow = bbox[1][1]
+                if bottomRow == -1:
+                    bottomRow = brow
+                if bottomRow != -1 and brow - bottomRow > avg_height:
+                    captured = True # Multiline criterion satisfied!!!
+                    break
+            tries += 1
+        sample = img[top:bottom,left:right]
+        sample = scale_pad_and_center(sample, height, width)
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)+3] = 1.0 # Set class to multiline
+        #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
+        # Append character density map here!
+        return sample, encoded_gt
+
+    def blank_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        # Sample lots of bboxes until one spanning multiple lines is found
+        captured = False
+        tries = 0
+        max_tries = 100
+        avg_height = 0
+        num_bboxes = 10
+        for i in range(num_bboxes):
+            bbox = random.choice(page['bboxes'])
+            avg_height += (bbox[1][1] - bbox[0][1])
+        avg_height /= num_bboxes
+        minheight = 2
+        maxheight = int(avg_height)
+        ht = random.randint(minheight, maxheight)
+        while not captured and tries < max_tries:
+            left = random.randint(0, max(1, img.shape[1]-ht))
+            top = random.randint(0, max(1, img.shape[0]-ht))
+            bottom = min(top + ht, img.shape[0]-1)
+            right = min(left + ht, img.shape[1]-1)
+            overbox = [[left,top],[right,bottom]]
+            bottomRow = -1
+            inboxes = False
+            for bbox in page['bboxes']:
+                if boxes_overlap(overbox, bbox):
+                    inboxes = True
+                    break
+            if not inboxes:
+                captured = True
+            tries += 1
+        sample = img[top:bottom,left:right]
+        sample = scale_pad_and_center(sample, height, width)
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)+5] = 1.0 # Set class to blank
+        #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
+        # Append character density map here!
+        return sample, encoded_gt
+
+    def subchar_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
+        wordnum = get_word_with_charsegs(page)
+        gt = page['gt_as_wordlist'][wordnum]
+        bbox = page['bboxes'][wordnum]
+        charsegs = page['bbox_charsegs'][wordnum]
+        charnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
+        #print charsegs
+        left = charsegs[charnum-1] + bbox[0][0] if charnum > 0 else bbox[0][0]
+        right = charsegs[charnum] + bbox[0][0] if charnum < len(charsegs) else bbox[1][0]
+        w = random.randint(5, max(6, right-left))
+        offx = random.randint(0, max(1,bbox[1][0]-bbox[0][0]-w))
+        offy = random.randint(0, max(1,bbox[1][1]-bbox[0][1]-w))
+        left = min(left + offx, img.shape[1]-2)
+        right = min(left + offx + w, img.shape[1]-1)
+        top = min(bbox[0][1] + offy, img.shape[0]-2)
+        bottom = min(bbox[0][1] + offy+w, img.shape[0]-1)
+        sample = img[top:bottom,left:right]
+        #print sample.shape
+        sample = scale_pad_and_center(sample, height, width)
+        gt = gt[charnum]
+        encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
+        encoded_gt[len(char_to_idx)+4] = 1.0 # Set class to blank
+        #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
+        # Append character density map here!
+        return sample, encoded_gt
+
 def inbox(bbox, pt):
     return pt[0] >= bbox[0][0] and pt[0] <= bbox[1][0] and pt[1] >= bbox[0][1] and pt[1] <= bbox[1][1]
 
@@ -575,43 +774,6 @@ def boxcorners_inbox(box1, box2):
 
 def boxes_overlap(box1, box2):
     return boxcorners_inbox(box1, box2) or boxcorners_inbox(box2, box1)
-
-def blank_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
-    # Sample lots of bboxes until one spanning multiple lines is found
-    captured = False
-    tries = 0
-    max_tries = 100
-    avg_height = 0
-    num_bboxes = 10
-    for i in range(num_bboxes):
-        bbox = random.choice(page['bboxes'])
-        avg_height += (bbox[1][1] - bbox[0][1])
-    avg_height /= num_bboxes
-    minheight = 2
-    maxheight = int(avg_height)
-    ht = random.randint(minheight, maxheight)
-    while not captured and tries < max_tries:
-        left = random.randint(0, max(1, img.shape[1]-ht))
-        top = random.randint(0, max(1, img.shape[0]-ht))
-        bottom = min(top + ht, img.shape[0]-1)
-        right = min(left + ht, img.shape[1]-1)
-        overbox = [[left,top],[right,bottom]]
-        bottomRow = -1
-        inboxes = False
-        for bbox in page['bboxes']:
-            if boxes_overlap(overbox, bbox):
-                inboxes = True
-                break
-        if not inboxes:
-            captured = True
-        tries += 1
-    sample = img[top:bottom,left:right]
-    sample = scale_pad_and_center(sample, height, width)
-    encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
-    encoded_gt[len(char_to_idx)+5] = 1.0 # Set class to blank
-    #encoded_gt = string_utils.str2label_single(gt, char_to_idx)
-    # Append character density map here!
-    return sample, encoded_gt
 
 def image_sample_generator(img, page, height=28, width=28, char_to_idx={}, extra_classes=7):
     pass
