@@ -21,7 +21,7 @@ from data_loaders.data_loaders import WholeImageOnlyBatcher
 from data_loaders.training_sample_generators import *
 from collections import defaultdict
 from models.model import build_model
-from predict import *
+from infer import *
 from utils import _mkdir
 #############################################################
 

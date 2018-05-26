@@ -30,7 +30,7 @@ def deconv2d( in_var, output_shape, name="deconv2d", stddev=0.02, bias_val=0.0 )
                              initializer=tf.truncated_normal_initializer( stddev=0.02 ) )
         b = tf.get_variable( "b", [output_shape[-1]],
                              initializer=tf.constant_initializer( bias_val ))
-        
+
         dyn_input_shape = tf.shape(in_var)
         batch_size = dyn_input_shape[0]
         output_shape = tf.stack([batch_size, output_shape[1], output_shape[2], output_shape[3]])
@@ -69,7 +69,11 @@ def cnn_layer(tensor, ks=3, infeats=16, outfeats=16, keep_prob=1.0, nonlin=relu,
     return h_pool_drop
 
 # Hourglass autoencoder
-def cnn224x224_autoencoder_almostoptim(x_image, final_feats=10, keep_prob=0.5, batch_size=64, featmaps=32, ds=4, height=224, width=224, ks=3, dks=3, fc_layers=0, fc_feats=1024):
+def cnn224x224_autoencoder_almostoptim(x_image, final_feats=10, keep_prob=0.5, batch_size=64, featmaps=32, ds=4, height=224, width=224, ks=3, dks=3, fc_layers=0, fc_feats=1024, class_splits=[], pred_splits=[], size=None):
+    if size is not None:
+        height = width = size
+    if len(class_splits) > 0:
+        final_feats = class_splits[0]
     mid_feats = x_image
     mid_featmaps = featmaps
     mf = mid_featmaps
@@ -119,6 +123,7 @@ def cnn224x224_autoencoder_almostoptim(x_image, final_feats=10, keep_prob=0.5, b
     return hi_feats
 
 def cnn224x224_autoencoder_regionpred(x_image, final_feats=10, keep_prob=0.5, batch_size=64, fc=False, width=224, height=224, featmaps=16, ds=4, ks=3, dks=5, fc_layers=0, fc_feats=1024):
+    print "Using cnn224x224_autoencoder_regionpred model"
     depth = 1 #ds
     feats = x_image
     for i in range(0, depth):

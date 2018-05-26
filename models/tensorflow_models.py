@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from models.vanilla_cnn import *
+import models.vanilla_cnn
 from models.nn_utils import *
 
 def model(x_image, class_splits=[], pred_splits=[], keep_prob=0.5, batch_size=64, size=224):
@@ -131,7 +132,12 @@ class TFModelKerasStyle:
         self.display_interval = 25
         self.save_interval = 5000
         self.profile = profile
-        self.x, self.y_, self.y_conv, self.train_step, self.accuracy, self.keep_prob, self.loss, self.saver = create_model(self.sess, model_factory=model, loadmodel=self.model_path, params=self.params, trainable=True, batch_size=self.batch_size, height=self.height, width=self.width)
+        self.model_type = args.model_type
+        self.model_constructor = model
+        if getattr(models.vanilla_cnn, self.model_type) is not None:
+            print "Using model derived from description:", self.model_type
+            self.model_constructor = getattr(models.vanilla_cnn, self.model_type)
+        self.x, self.y_, self.y_conv, self.train_step, self.accuracy, self.keep_prob, self.loss, self.saver = create_model(self.sess, model_factory=self.model_constructor, loadmodel=self.model_path, params=self.params, trainable=True, batch_size=self.batch_size, height=self.height, width=self.width)
         if profile:
             for v in tf.trainable_variables():
                 tf.summary.histogram(v.name, v)
@@ -206,7 +212,7 @@ class TFModelKerasStyle:
                     _, loss, summary = self.sess.run([self.train_step, self.loss, merge_reports], feed_dict={self.x:batch, self.y_:targets, self.keep_prob: self.dropout})
                     self.train_writer.add_summary(summary, self.iteration)
                 else:
-                    _, loss = self.sess.run([self.train_step, self.loss], feed_dict={self.x:batch, self.y_:targets, self.keep_prob: self.dropout})                    
+                    _, loss = self.sess.run([self.train_step, self.loss], feed_dict={self.x:batch, self.y_:targets, self.keep_prob: self.dropout})
 
                 # Call all of the callbacks!
                 logs = {"loss":loss}
