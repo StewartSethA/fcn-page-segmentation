@@ -500,7 +500,9 @@ class DisplayAccuracyCallback(Callback):
         self.prec.append(av_prec/preds.shape[-1])
         self.reca.append(av_rec/preds.shape[-1])
         self.fscore.append(av_fsc/preds.shape[-1])
-        self.pixacc.append(av_acc/preds.shape[-1])
+        # Scale the pixacc for visualization
+        import math
+        self.pixacc.append(math.log(av_acc/preds.shape[-1]+0.0000000000001)+1.0)
         plt.figure("Training Loss and Mini-Validation Metric History")
         plt.clf()
         plt.plot(self.losses, color='xkcd:orange')

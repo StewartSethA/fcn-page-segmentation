@@ -18,9 +18,9 @@ def parse_args():
     parser.add_argument('--crop_size', type=int, default=224, metavar='M', help='training image crop size (default 128)')
     parser.add_argument('--batcher', type=str, default="legacy", metavar='N', help='Batcher: Enables or disables augmentations. Options are simple (default) and legacy (more augmentations)')
 
-    parser.add_argument('--epochs', type=int, default=20, metavar='N', help='number of epochs to train (default: 40)')
+    parser.add_argument('--epochs', type=int, default=50, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--steps_per_epoch', type=int, default=1000, metavar='N', help='number of epochs to train (default: 40)')
-    parser.add_argument('--lr', type=float, default=0.002, metavar='LR',help='learning rate (default: 0.01)')
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',help='learning rate (default: 0.01)')
 
     # Model persistence parameters.
     parser.add_argument('--model_save_path', type=str, default="model_checkpoint", metavar='N', help='model save path')
