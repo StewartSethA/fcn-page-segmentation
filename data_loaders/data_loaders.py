@@ -352,7 +352,7 @@ class PerformanceFeedbackDatasetSampler(DatasetSampler):
 
 # Load whole or cropped images and ground truth.
 class ImageAndGTBatcher(object):
-    def __init__(self, training_folder, num_classes=6, batch_size=1, downsampling_rate=1, dataset_sampler=None, image_sampler=None, data_augmenter=DataAugmenter(), image_channels=3, train=True, max_downsampling=8, cache_images=True, crop_size=256, index=None):
+    def __init__(self, training_folder, num_classes=6, batch_size=1, downsampling_rate=1, dataset_sampler=None, image_sampler=None, data_augmenter=DataAugmenter(), image_channels=3, train=True, max_downsampling=8, cache_images=True, crop_size=256, index=None, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
         data_augmenter = None #TODO Fix augmenter
         if dataset_sampler is None:
             if train:
@@ -383,6 +383,7 @@ class ImageAndGTBatcher(object):
         self.image_frequency = defaultdict(lambda:0)
         self.cache_images = cache_images
         self.crop_size = crop_size
+        self.suffix_to_class_map = suffix_to_class_map
         self.gt = None
         self.image = None
         self.imb = None
@@ -443,7 +444,7 @@ class ImageAndGTBatcher(object):
                 self.last_path = image_path
 
                 # Load the GT and image.
-                gt = load_gt(image_path, self.num_classes, memory_cache=self.cached_images, compress_in_ram=compress_in_ram, downsampling_rate=self.downsampling_rate, debuglevel=debuglevel)
+                gt = load_gt(image_path, self.num_classes, memory_cache=self.cached_images, compress_in_ram=compress_in_ram, downsampling_rate=self.downsampling_rate, debuglevel=debuglevel, suffix_to_class_map=self.suffix_to_class_map)
                 img = self.load_image(image_path)
 
                 # TODO: GT images are still off by a bit, and sometimes the GT image is scaled up in one dimension vs the original.
@@ -513,7 +514,7 @@ class ImageAndGTBatcher(object):
                 debuglevel = 0
                 #if not self.train:
                 #    debuglevel = 5
-                gt = load_gt(image_path, self.num_classes, memory_cache=self.cached_images, compress_in_ram=compress_in_ram, downsampling_rate=self.downsampling_rate, debuglevel=debuglevel)
+                gt = load_gt(image_path, self.num_classes, memory_cache=self.cached_images, compress_in_ram=compress_in_ram, downsampling_rate=self.downsampling_rate, debuglevel=debuglevel, suffix_to_class_map=self.suffix_to_class_map)
                 image = self.load_image(image_path)
 
                 # Pad or crop the image.

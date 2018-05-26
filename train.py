@@ -15,13 +15,14 @@ import random
 from collections import defaultdict
 import matplotlib.pyplot as plt
 plt.ion()
+from data_loaders.gt_loaders import autodiscover_suffix_to_class_map
 from data_loaders.data_loaders import index_training_set_by_class
 from data_loaders.data_loaders import ImageAndGTBatcher
 from data_loaders.data_loaders import WholeImageOnlyBatcher
 from data_loaders.training_sample_generators import *
 from collections import defaultdict
 from models.model import build_model
-from predict import *
+from infer import *
 from utils import _mkdir
 #############################################################
 
@@ -44,10 +45,21 @@ def train(args):
 
     # Index the training set for efficient caching and batching, including class rebalancing.
     print "Training folder", training_folder
-    index = index_training_set_by_class(training_folder, num_classes=num_classes)
+    suffix_to_class_map = autodiscover_suffix_to_class_map(training_folder, ["jpg", "png", "tif"])
+    print "Inferred suffix to class map:", suffix_to_class_map
+    if len(suffix_to_class_map) > 0:
+        num_classes = len(suffix_to_class_map)
+        args.num_classes = num_classes
+    index = index_training_set_by_class(training_folder, num_classes=num_classes, suffix_to_class_map=suffix_to_class_map)
     class_to_samples, image_list, pixel_counts_byclass = index
+    if len(image_list) == 0:
+        print "No images found in training folder! Cannot train; aborting!"
+        exit()
+    if sum([len(class_to_samples[c]) for c in class_to_samples.keys()]) == 0:
+        print "No class samples indexed! Cannot train; aborting!", class_to_samples
+        exit()
     print("Number of samples per class:", {c:len(class_to_samples[c]) for c in class_to_samples.keys()})
-    training_generator_class = ImageAndGTBatcher(args.training_folder, num_classes, batch_size, index=index, downsampling_rate=ds_rate, crop_size=in_width)
+    training_generator_class = ImageAndGTBatcher(args.training_folder, num_classes, batch_size, index=index, downsampling_rate=ds_rate, crop_size=in_width, suffix_to_class_map=suffix_to_class_map)
     if args.batcher == 'simple':
         training_generator = training_generator_class.generate(in_width)
     elif args.batcher == 'mixed':
@@ -59,7 +71,7 @@ def train(args):
     # If none is supplied, the training set will be used for real-time display, etc.
     print "Validation folder", validation_folder
     validation_folder = sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
-    validation_generator_class = ImageAndGTBatcher(args.validation_folder, num_classes, batch_size=1, downsampling_rate=ds_rate, train=False, cache_images=True)
+    validation_generator_class = ImageAndGTBatcher(args.validation_folder, num_classes, batch_size=1, downsampling_rate=ds_rate, train=False, cache_images=True, suffix_to_class_map=suffix_to_class_map)
     validation_generator = validation_generator_class.generate()
 
     # For model benchmarking purposes, estimate the memory consumed by model instantiation.
@@ -151,11 +163,11 @@ def train(args):
 
     # PERFORM TRAINING!!!!
     print("Training!")
-    try:
-        model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
-    except Exception as ex:
-        print "Exception caught!"
-        print ex
+    #try:
+    model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
+    #except Exception as ex:
+    #    print "Exception caught!"
+    #    print ex
     print "Training is COMPLETE."
     for i in range(100):
         print ""

@@ -16,10 +16,65 @@ import os
 from collections import defaultdict
 
 # TODO: Import code from txt_to_pngs here?
-def load_gt_from_txt(image_path, num_classes=6, dontcare_idx=-1, image_size=(0,0)):
+def load_gt_from_txt(image_path, num_classes=6, dontcare_idx=-1, image_size=(0,0), suffix_to_class_map=None):
     pass
 
-def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}, gtext="jpg"):
+def find_roots_and_suffices(filelist):
+    basenames = [os.path.splitext(f)[0] for f in filelist]
+    names_set = set(basenames)
+    # Here's the idea: For each new basename, trim off characters until a basename already in the file list is found.
+    # This indicates that this is the image file corresponding to the ground truths, and that the truncated characters represent a class name.
+    # Order them by length.
+    basenames_set = set()
+    files_to_basenames = {}
+    suffix_to_class = {}
+    longest_first_basenames = reversed(sorted(basenames, key=lambda k: len(k)))
+    class_names = set()
+    for name in longest_first_basenames:
+        if name in files_to_basenames.values():
+            print "File ", name, "already in matched input image basenames; skipping!"
+            continue
+        found_match = False
+        i = name.rfind("_")
+        if i != -1:
+            shorter = name[:i]
+            if shorter in basenames:
+                # Found a corresponding GT file!
+                files_to_basenames[name] = shorter
+                classname = name[i:]
+                if not classname in class_names:
+                    class_names.add(classname.strip("_"))
+                found_match = True
+        else:
+            for i in reversed(range(len(name))):
+                shorter = name[:i]
+                if shorter in basenames:
+                    # Found a corresponding GT file!
+                    files_to_basenames[name] = shorter
+                    classname = name[i:]
+                    if not classname in class_names:
+                        class_names.add(classname)
+                    found_match = True
+                    break
+        if not found_match:
+            print "WARNING: No matching GT file found for path", name
+    return class_names
+
+def autodiscover_suffix_to_class_map(folder, exts=["jpg", "png", "tif"]):
+    filelist = [f for f in os.listdir(folder) if f[-3:].lower() in exts]
+    # Basic idea for this algorithm: Take a directory listing.
+    # Find common basenames in file paths.
+    # Pool common endings into a dictionary.
+    # Map these to integers.
+    # Done.
+    rs = find_roots_and_suffices(filelist)
+    ls = list(rs)
+    sls = sorted(ls)
+    mls = {k:i for i,k in enumerate(sls)}
+    return mls
+
+
+def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["jpg","png","tif"], suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
     gtdim = num_classes = len(suffix_to_class_map)
     classnums = range(0, num_classes)
     if dontcare_idx > 0:
@@ -28,13 +83,17 @@ def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, suffix_to_
 
     gt = None
     for class_suffix, classnum in suffix_to_class_map.items():
-        gt_layer_path = image_path + "_" + class_suffix + "." + gtext
-        if os.path.exists(gt_layer_path):
-            print "reading", gt_layer_path
-            gt_layer = cv2.imread(gt_layer_path, 0).astype('float32') / 255.0
-            if gt is None:
-                gt = np.zeros((gt_layer.shape[0], gt_layer.shape[1], gtdim))
-            gt[:,:,classnum] = gt_layer
+        for gtext in gtexts:
+            gt_layer_path = os.path.splitext(image_path)[0] + "_" + class_suffix + "." + gtext
+            if not os.path.exists(gt_layer_path):
+                gt_layer_path = image_path + "_" + class_suffix + "." + gtext
+            if os.path.exists(gt_layer_path):
+                print "reading", gt_layer_path
+                gt_layer = cv2.imread(gt_layer_path, 0).astype('float32') / 255.0
+                if gt is None:
+                    gt = np.zeros((gt_layer.shape[0], gt_layer.shape[1], gtdim))
+                gt[:,:,classnum] = gt_layer
+                break
     # Catch-all: No GT channels loaded? Still return the appropriate sized block of zeros.
     if gt is None:
         img = cv2.imread(image_path)
@@ -42,7 +101,7 @@ def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, suffix_to_
     return gt
 
 # Load GT from a set of greyscale PNGs.
-def load_gt_pnglayers(image_path, num_classes=6, dontcare_idx=-1):
+def load_gt_pnglayers(image_path, num_classes=6, dontcare_idx=-1, suffix_to_class_map=None):
     """
     Loads a set of ground truth (GT) channels for an image from correspondingly named .PNG files.
 
@@ -92,7 +151,7 @@ def load_gt_pnglayers(image_path, num_classes=6, dontcare_idx=-1):
     return gt
 
 # Load GT from a single multi-hot bit-indexed color PNG.
-def load_gt_multihot_bit_indexed_png(image_path, num_classes=6, dontcare_idx=-1):
+def load_gt_multihot_bit_indexed_png(image_path, num_classes=6, dontcare_idx=-1, suffix_to_class_map=None):
     """
     Loads ground truth (GT) channels from a single correspondingly named color PNG file.
     If the image is named "dir/my_image.jpg", then the ground truth file is named "dir/my_image.png".
@@ -154,7 +213,7 @@ def load_gt_multihot_bit_indexed_png(image_path, num_classes=6, dontcare_idx=-1)
     return gt
 
 # Disk-Caching wrapper for loading ground truth. Currently uses .npz format.
-def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit_indexed_png, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1):
+def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit_indexed_png, dontcare_idx=-1, use_disk_cache=True, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
     # First check the memory cache.
     if memory_cache is not None:
         if debuglevel > 1:
@@ -196,7 +255,7 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
             except Exception:
                 if debuglevel > 0:
                     print("Loading npz failed! Using primary loader...")
-                gt = gt_loader(image_path, num_classes, dontcare_idx=dontcare_idx)
+                gt = gt_loader(image_path, num_classes, dontcare_idx=dontcare_idx, suffix_to_class_map=suffix_to_class_map)
                 if debuglevel > 1:
                     print("Saving GT to disk, shape:", gt.shape)
                 with open(image_path+"_gt.npz", 'wb') as f:
@@ -204,7 +263,7 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
         else:
             if debuglevel > 2:
                 print("Not found in disk cache. Using primary loader...")
-            gt = gt_loader(image_path, num_classes, dontcare_idx=dontcare_idx)
+            gt = gt_loader(image_path, num_classes, dontcare_idx=dontcare_idx, suffix_to_class_map=suffix_to_class_map)
             # Save the compressed GT into the disk cache.
             if debuglevel > 1:
                 print("Saving GT to disk, shape:", gt.shape)
@@ -213,7 +272,7 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
     else:
         if debuglevel > 2:
             print("Not using disk cache. Using primary loader...")
-        gt = gt_loader(image_path, num_classes, dontcare_idx=dontcare_idx)
+        gt = gt_loader(image_path, num_classes, dontcare_idx=dontcare_idx, suffix_to_class_map=suffix_to_class_map)
 
     if debuglevel > 1:
         print("load_gt GT shape:", gt.shape)
@@ -245,7 +304,7 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
 
 
 # Automatically determines the GT loader to use.
-def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache=False, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1):
+def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache=False, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
     if debuglevel > 3:
         print "Loading GT for base file", image_path
     gt_loader = load_gt_from_suffices
@@ -268,23 +327,29 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
                 gt_loader = load_gt_pnglayers
                 break
     if gt_layer_path is not None and not os.path.exists(gt_layer_path):
-        suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}
-        gtext="jpg"
+        #suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}
+        gtexts=["png", "jpg"]
         for class_suffix, classnum in suffix_to_class_map.items():
-            gt_layer_path = image_path + "_" + class_suffix + "." + gtext
-            if os.path.exists(gt_layer_path):
-                if debuglevel > 2:
-                    print "Using suffix GT loader on ", image_path
-                gt_loader = load_gt_from_suffices
-                break
+            for gtext in gtexts:
+                gt_layer_path = image_path + "_" + class_suffix + "." + gtext
+                if debuglevel > 1:
+                    print "Testing existence of GT:", gt_layer_path
+                if os.path.exists(gt_layer_path):
+                    if debuglevel > 2:
+                        print "Using suffix GT loader on ", image_path
+                    gt_loader = load_gt_from_suffices
+                    break
+    else:
+        if debuglevel > 3:
+            "Using default gt loader", gt_loader
 
-    return load_gt_diskcached(image_path, num_classes=num_classes, gt_loader=gt_loader, dontcare_idx=dontcare_idx, use_disk_cache=use_disk_cache, memory_cache=memory_cache, compress_in_ram=compress_in_ram, downsampling_rate=downsampling_rate, debuglevel=debuglevel)
+    return load_gt_diskcached(image_path, num_classes=num_classes, gt_loader=gt_loader, dontcare_idx=dontcare_idx, use_disk_cache=use_disk_cache, memory_cache=memory_cache, compress_in_ram=compress_in_ram, downsampling_rate=downsampling_rate, debuglevel=debuglevel, suffix_to_class_map=suffix_to_class_map)
 
 load_gt = load_gt_automatic
 
 
 # Index a training set for efficient per-class exemplar access.
-def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1):
+def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
     """
     Creates an index of a training set, with GT presence per class, per image.
     This index can be used to create class-balanced batches efficiently.
@@ -309,7 +374,7 @@ def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1):
     pixel_counts_byclass = defaultdict(lambda:0)
     total_pixel_count = 0.0
     for image_path in image_list:
-        gt = load_gt(image_path, num_classes)
+        gt = load_gt(image_path, num_classes, suffix_to_class_map=suffix_to_class_map)
         for classnum in range(0, num_classes):
             gt_layer = gt[:,:,classnum]
             pixel_count = np.count_nonzero(gt_layer)

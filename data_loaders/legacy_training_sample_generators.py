@@ -393,6 +393,9 @@ def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0
     #encoded_gt[label] = 1.0
     gt_region = np.zeros((size,size,numclasses))
     #gt_region[pad_u:pad_u+b-u,pad_l:pad_l+r-l,label] = (255.0-maskpixels[u:b,l:r])/255.0
+    #print maskpixels.shape, u, b, l, r, maskpixels
+    #import sys
+    #sys.stdout.flush()
     gt_region[pad_u:pad_u+b-u,pad_l:pad_l+r-l,:maskpixels.shape[2]] = maskpixels[u:b,l:r]
     encoded_gt = cv2.resize(gt_region, (width, height), interpolation=cv2.INTER_LINEAR)
     #encoded_gt = np.concatenate((encoded_gt, np.zeros((height, width, 1))), axis=2)
