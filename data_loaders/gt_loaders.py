@@ -1,3 +1,4 @@
+from __future__ import print_function
 """
 Ground truth loaders for semantic segmentation (pixel-labeling) tasks.
 
@@ -32,7 +33,7 @@ def find_roots_and_suffices(filelist):
     class_names = set()
     for name in longest_first_basenames:
         if name in files_to_basenames.values():
-            print "File ", name, "already in matched input image basenames; skipping!"
+            print("File ", name, "already in matched input image basenames; skipping!")
             continue
         found_match = False
         i = name.rfind("_")
@@ -57,7 +58,7 @@ def find_roots_and_suffices(filelist):
                     found_match = True
                     break
         if not found_match:
-            print "WARNING: No matching GT file found for path", name
+            print("WARNING: No matching GT file found for path", name)
     return class_names
 
 def autodiscover_suffix_to_class_map(folder, exts=["jpg", "png", "tif"]):
@@ -89,7 +90,7 @@ def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["j
                 gt_layer_path = image_path + "_" + class_suffix + "." + gtext
             if os.path.exists(gt_layer_path):
                 if debuglevel > 2:
-                    print "reading", gt_layer_path
+                    print("reading", gt_layer_path)
                 gt_layer = cv2.imread(gt_layer_path, 0).astype('float32') / 255.0
                 if gt is None:
                     gt = np.zeros((gt_layer.shape[0], gt_layer.shape[1], gtdim))
@@ -146,7 +147,7 @@ def load_gt_pnglayers(image_path, num_classes=6, dontcare_idx=-1, suffix_to_clas
             gt[:,:,classnum] = gt_layer
     # Catch-all: No GT channels loaded? Still return the appropriate zeros.
     if gt is None:
-        print "Trying to load blank GT having shape of original:", image_path
+        print("Trying to load blank GT having shape of original:", image_path)
         img = cv2.imread(image_path)
         gt = np.zeros((img.shape[0], img.shape[1], gtdim))
     return gt
@@ -307,24 +308,24 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
 # Automatically determines the GT loader to use.
 def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache=False, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
     if debuglevel > 3:
-        print "Loading GT for base file", image_path
+        print("Loading GT for base file", image_path)
     gt_loader = load_gt_from_suffices
     if os.path.exists(image_path.replace("jpg", "png")):
         gt_loader = load_gt_multihot_bit_indexed_png
         if debuglevel > 2:
-            print "Using multihot layer loader on", image_path
+            print("Using multihot layer loader on", image_path)
     else:
         for classnum in range(num_classes):
             gt_layer_path = image_path.replace(".jpg", "_" + str(classnum) + ".jpg")
             if os.path.exists(gt_layer_path):
                 if debuglevel > 2:
-                    print "Using png layer loader on", gt_layer_path
+                    print("Using png layer loader on", gt_layer_path)
                 gt_loader = load_gt_pnglayers
                 break
             gt_layer_path = image_path.replace(".jpg", "_" + str(classnum) + ".png")
             if os.path.exists(gt_layer_path):
                 if debuglevel > 2:
-                    print "Using png layer loader on", gt_layer_path
+                    print("Using png layer loader on", gt_layer_path)
                 gt_loader = load_gt_pnglayers
                 break
     if gt_layer_path is not None and not os.path.exists(gt_layer_path):
@@ -334,10 +335,10 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
             for gtext in gtexts:
                 gt_layer_path = image_path + "_" + class_suffix + "." + gtext
                 if debuglevel > 1:
-                    print "Testing existence of GT:", gt_layer_path
+                    print("Testing existence of GT:", gt_layer_path)
                 if os.path.exists(gt_layer_path):
                     if debuglevel > 2:
-                        print "Using suffix GT loader on ", image_path
+                        print("Using suffix GT loader on ", image_path)
                     gt_loader = load_gt_from_suffices
                     break
     else:
@@ -404,7 +405,7 @@ def index_training_set_by_class(training_folder, num_classes=4, debuglevel=-1, s
             print(c, str(float(pixel_counts_byclass[c])/total_pixel_count))
     for c in range(num_classes):
         if len(class_to_samples[c]) == 0:
-            print "WARNING!!! Dataset has zero instances representing class ", c, ". Training and validation performance will be affected adversely."
+            print("WARNING!!! Dataset has zero instances representing class ", c, ". Training and validation performance will be affected adversely.")
     return class_to_samples, image_list, pixel_counts_byclass
 
 

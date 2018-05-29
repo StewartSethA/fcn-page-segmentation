@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 # >>>>>>>>>>>>>>>>>>>> OLD prediction code !!
 import Tkinter as tk
 import Tkconstants, tkFileDialog
@@ -41,8 +41,8 @@ try:
     import hwn4_tf
     import string_utils
 except Exception as ex:
-    print ex
-    print "Entering non-training mode"
+    print(ex)
+    print("Entering non-training mode")
     trainable = False
 
 # Import Image Processing Tools
@@ -96,7 +96,7 @@ class Transcriber:
         found_files = []
         for ext in self.image_extensions:
             found_files.extend(glob.glob(foldername + "/" + ext))
-        print "Found " + str(len(found_files)) + " image files."
+        print("Found " + str(len(found_files)) + " image files.")
         self.pages = [{} for f in found_files]
         for i,f in enumerate(sorted(found_files)):
             self.page = self.pages[i]
@@ -131,13 +131,13 @@ class Transcriber:
             n = 100
             self.multrec_timing_benchmark(n)
             e_time = time.time()
-            print (e_time - s_time) * 1000.0, "ms"
-            print float(n) / (e_time - s_time), "Images per second."
+            print((e_time - s_time) * 1000.0, "ms")
+            print(float(n) / (e_time - s_time), "Images per second.")
         else:
             self.trainer.recognize(self.page)
 
     def train_hw_machprint_form(self):
-        print "Training HW/Machine Print discriminator USING FORMS!"
+        print("Training HW/Machine Print discriminator USING FORMS!")
         self.keep_training = True
         self.accuracies = []
         self.iterations = []

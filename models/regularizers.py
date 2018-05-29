@@ -1,3 +1,4 @@
+from __future__ import print_function
 import keras.backend as K
 
 def zeromean_regularizer(weight_matrix=None, amt=0.01):

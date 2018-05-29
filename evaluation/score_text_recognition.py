@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -55,11 +56,11 @@ def box_iou(b1, b2, generosity=100):
     right_intersection = min(box1[2], box2[2])
     top_intersection = max(box1[1], box2[1])
     bottom_intersection = min(box1[3], box2[3])
-    #print left_intersection, right_intersection
-    #print top_intersection, bottom_intersection
+    #print(left_intersection, right_intersection)
+    #print(top_intersection, bottom_intersection)
     h_intersection = bottom_intersection - top_intersection
     w_intersection = right_intersection - left_intersection
-    #print h_intersection, w_intersection
+    #print(h_intersection, w_intersection)
     if h_intersection < 0 or w_intersection < 0:
         return 0.0
     else:
@@ -71,7 +72,7 @@ def box_iou(b1, b2, generosity=100):
         a1 = h1*w1
         a2 = h2*w2
         a_union = a1+a2-a_intersection
-        #print a1, a2, a_union, a_intersection
+        #print(a1, a2, a_union, a_intersection)
         iou = float(a_intersection) / a_union
         return iou
 
@@ -111,12 +112,12 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
         ngbd = {}
         for g,gt_box in gt_boxdict.iteritems():
             gt_text = gt_texts[g]
-            print g, gt_text
+            print(g, gt_text)
             gt_text = pattern.sub('', gt_text)
             if len(gt_text) > 0:
                 gt_texts[g] = gt_text
                 ngbd[g] = gt_box
-        print "Pruned items from gt boxdict:", len(gt_boxdict), len(ngbd)
+        print("Pruned items from gt boxdict:", len(gt_boxdict), len(ngbd))
         gt_boxdict = ngbd
         npbd = {}
         for p,pred_box in pred_boxdict.iteritems():
@@ -126,7 +127,7 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
                 pred_texts[p] = pred_text
                 npbd[p] = pred_box
         pred_boxdict = npbd
-        print "Pruned items from pred boxdict:", len(pred_boxdict), len(npbd)
+        print("Pruned items from pred boxdict:", len(pred_boxdict), len(npbd))
 
     #overlap_scores = np.zeros((len(gt_texts), len(pred_texts)))
     matched_idxs = {}
@@ -165,7 +166,7 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
             if len(gt) == 0 and len(pred) == 0:
                 continue
             if len(gt) == 0:
-                print "WARNING! GT length is zero!", gt_texts[pair[0]], "pred is", pred_texts[pair[1]]
+                print("WARNING! GT length is zero!", gt_texts[pair[0]], "pred is", pred_texts[pair[1]])
                 # Throw it back!
                 continue
         paired_boxes.append(pair)
@@ -175,23 +176,23 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
         not_taken_pi.remove(pair[1])
         ptc = cer(gt, pred)
         paired_transcription_cers.append(ptc)
-        print score, ptc, gt, pred
+        print(score, ptc, gt, pred)
     print("Length of paired transcription CERS:", len(paired_transcription_cers))
 
     for pi in not_taken_pi:
-        print "Unaligned pred:", pi, pred_texts[pi], pred_boxes[pi]
+        print("Unaligned pred:", pi, pred_texts[pi], pred_boxes[pi])
 
     for gti in not_taken_gti:
-        print "Unaligned GT:", gti, gt_texts[gti], gt_boxes[gti]
+        print("Unaligned GT:", gti, gt_texts[gti], gt_boxes[gti])
 
-    print "Aligned box pairs", len(paired_transcription_cers), "gt boxes", len(gt_boxdict), "pred boxes", len(pred_boxdict)
-    #print "Unaligned GT boxes", len(not_taken_gti)
-    #print "Unaligned Pred boxes", len(not_taken_pi)
+    print("Aligned box pairs", len(paired_transcription_cers), "gt boxes", len(gt_boxdict), "pred boxes", len(pred_boxdict))
+    #print("Unaligned GT boxes", len(not_taken_gti))
+    #print("Unaligned Pred boxes", len(not_taken_pi))
 
     all_transcription_errors = list(paired_transcription_cers)
     all_transcription_error_weights = [float(len(gt_texts[p[0]])) for p in paired_boxes]
     weighted_cer = sum([all_transcription_errors[i]*all_transcription_error_weights[i] for i in range(len(all_transcription_errors))]) / sum(all_transcription_error_weights)
-    #print "ATEW", len(all_transcription_error_weights)
+    #print("ATEW", len(all_transcription_error_weights))
 
     unaligned_pred_cers = [1.0 for i in not_taken_pi]
     unaligned_gt_cers = [1.0 for i in not_taken_gti]
@@ -201,7 +202,7 @@ def align_boxes_cer(gt_boxes, gt_texts, pred_boxes, pred_texts, case_sense=True,
     gt_weights = [float(len(gt_texts[i])) for i in not_taken_gti]
     all_transcription_error_weights.extend(pred_weights)
     all_transcription_error_weights.extend(gt_weights)
-    #print len(all_transcription_error_weights)
+    #print(len(all_transcription_error_weights))
     weighted_all = sum([all_transcription_errors[i]*all_transcription_error_weights[i] for i in range(len(all_transcription_errors))]) / (sum(all_transcription_error_weights) - sum(pred_weights))
 
     total_predicted_chars = sum([len(pred_texts[i]) for i in pred_boxdict.keys()])

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 from collections import defaultdict
 import os
@@ -33,10 +34,10 @@ def model28x28_resnet(x_image, class_splits=[], pred_splits=[], keep_prob=0.5):
     return split_predictors
 
 def create_model(sess, model_factory=model, width=28, height=28, loadmodel=None, params={}, trainable=True, batch_size=64, num_channels=1):
-    print "Seth"
-    print "Params", params
+    print("Seth")
+    print("Params", params)
     if loadmodel is None:
-        print "Creating new model..."
+        print("Creating new model...")
         x = tf.placeholder(tf.float32, shape=[None, None, None, num_channels], name='x')
         y_ = tf.placeholder(tf.float32, shape=[None, None, None, sum(params['classes'])+sum(params['predictors'])], name='y_')
         keep_prob = tf.placeholder(tf.float32, name='keep_prob')
@@ -69,7 +70,7 @@ def create_model(sess, model_factory=model, width=28, height=28, loadmodel=None,
     return x, y_, y_conv, train_step, accuracy, keep_prob, loss, saver
 
 def restore_model(sess, loadmodel):
-    print "Loading model", loadmodel
+    print("Loading model", loadmodel)
     saver = tf.train.import_meta_graph(loadmodel+ '.meta')
     dirname = os.path.dirname(loadmodel)
     saver.restore(sess, tf.train.latest_checkpoint(dirname)) # TODO: As of now, this only returns the LATEST checkpoint. We want to be able to restore an ARBITRARY checkpoint!!!
@@ -79,7 +80,7 @@ def restore_model(sess, loadmodel):
     y_conv = tf.get_collection("logits")[0]
     loss = tf.get_collection("loss")[0]
     train_step = tf.get_collection("train_step")[0]
-    print "Success?"
+    print("Success?")
     return x, y_, y_conv, keep_prob, loss, train_step, saver
 
 # Variable learning rate
@@ -100,12 +101,12 @@ class TFModelKerasStyle:
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.model_path = args.load_model_path
-        print ""
-        print "TFModelKerasStyle"
-        print args
-        print self.model_path
+        print("")
+        print("TFModelKerasStyle")
+        print(args)
+        print(self.model_path)
         width = height = args.crop_size
-        print "Attempting to load model from path", self.model_path, os.path.exists(self.model_path + ".meta")
+        print("Attempting to load model from path", self.model_path, os.path.exists(self.model_path + ".meta"))
         if os.path.exists(self.model_path + ".meta"):
             pass
         else:
@@ -135,7 +136,7 @@ class TFModelKerasStyle:
         self.model_type = args.model_type
         self.model_constructor = model
         if getattr(models.vanilla_cnn, self.model_type) is not None:
-            print "Using model derived from description:", self.model_type
+            print("Using model derived from description:", self.model_type)
             self.model_constructor = getattr(models.vanilla_cnn, self.model_type)
         self.x, self.y_, self.y_conv, self.train_step, self.accuracy, self.keep_prob, self.loss, self.saver = create_model(self.sess, model_factory=self.model_constructor, loadmodel=self.model_path, params=self.params, trainable=True, batch_size=self.batch_size, height=self.height, width=self.width)
         if profile:
@@ -161,7 +162,7 @@ class TFModelKerasStyle:
             tot_fract += prob
             target_batch = int((tot_fract * batch_size))
             while start_b < target_batch:
-                #print start_b, prob, tot_fract, clas, target_batch
+                #print(start_b, prob, tot_fract, clas, target_batch)
                 ms = int(self.height*self.max_height_scale)
 
                 # TODO: GT images are still off by a bit, and sometimes the GT image is scaled up in one dimension vs the original.
@@ -173,18 +174,18 @@ class TFModelKerasStyle:
         return np_batch_imgs, np_batch_gts
 
     def predict(self, batch, batch_size=1):
-        print "TRYING TO DO PREDICTION WITH IMAGE OF SIZE", batch.shape
+        print("TRYING TO DO PREDICTION WITH IMAGE OF SIZE", batch.shape)
         # TODO: TF is awful! I can't just make things the shape I want!
         #return np.zeros((batch.shape[0], batch.shape[1], batch.shape[2], self.num_classes))
 
         #batch = batch[:, :self.height, :self.width, :]
         if batch.shape[-1] == 3:
-            print "Predict Batch shape", batch.shape
+            print("Predict Batch shape", batch.shape)
             batch = np.reshape(np.mean(batch, axis=-1), (batch_size, batch.shape[1], batch.shape[2], 1))
-        print "Batch stats:", np.mean(batch), np.std(batch), np.min(batch), np.max(batch)
+        print("Batch stats:", np.mean(batch), np.std(batch), np.min(batch), np.max(batch))
         logits = self.sess.run(self.y_conv, feed_dict={self.x:batch, self.keep_prob: 1.0})
-        print logits.shape
-        print "Pred stats:", np.mean(logits), np.std(logits), np.min(logits), np.max(logits)
+        print(logits.shape)
+        print("Pred stats:", np.mean(logits), np.std(logits), np.min(logits), np.max(logits))
         return logits
 
     def fit_generator(self, generator=None, steps_per_epoch=None, epochs=1, verbose=1, callbacks=None, validation_data=None, validation_steps=None, class_weight=None, max_queue_size=10, workers=1, use_multiprocessing=False, shuffle=True, initial_epoch=0):
@@ -194,10 +195,10 @@ class TFModelKerasStyle:
         self.iteration = initial_epoch * steps_per_epoch
 
         while self.epoch < epochs:
-            print "Epoch:", self.epoch
+            print("Epoch:", self.epoch)
             for step in range(steps_per_epoch):
                 if verbose > 1:
-                    print "Training iteration", self.iteration
+                    print("Training iteration", self.iteration)
 
                 if generator is None:
                     batch, targets = self.get_batch(self.batch_size, self.height, self.width)

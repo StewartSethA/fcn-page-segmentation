@@ -1,3 +1,4 @@
+from __future__ import print_function
 import Image
 from pytesseract import pytesseract as pt
 #from pytesseract import image_to_string
@@ -23,11 +24,11 @@ if __name__ == "__main__":
     
     char_and_box_lines = pt.image_to_boxes(Image.open(sys.argv[1])) #, 'output', lang='eng', boxes=True, config='hocr')
 
-    #print pt.image_to_data(Image.open(sys.argv[1]))
+    #print(pt.image_to_data(Image.open(sys.argv[1])))
 
     char_and_box_lines = char_and_box_lines.split("\n")
     #for line in char_and_box_lines:
-    #    print line
+    #    print(line)
 
     char_and_box_lines = [line.split(" ") for line in char_and_box_lines]
     chars = [l[0] for l in char_and_box_lines]

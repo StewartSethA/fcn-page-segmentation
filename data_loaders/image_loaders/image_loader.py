@@ -1,3 +1,4 @@
+from __future__ import print_function
 def load_image(image_path):
     raise NotImplementedError("No image loader has been specified.")
     

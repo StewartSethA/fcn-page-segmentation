@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cv2
 import numpy as np
 import sys
@@ -30,7 +31,7 @@ def template_match(img, template):
     #cv2.imshow('conv', disp)
     #cv2.waitKey()
 
-    #print convolved
+    #print(convolved)
     maxpt = np.argmax(convolved, 0)
     maxpty = np.argmax(convolved, 1)
     pt = np.unravel_index(convolved.argmax(), convolved.shape)
@@ -38,7 +39,7 @@ def template_match(img, template):
     ul = (pt[1] - im2.shape[1]/2, pt[0] - im2.shape[0]/2)
     br = (pt[1] + im2.shape[1]/2, pt[0] + im2.shape[0]/2)
 
-    print ul, br
+    print(ul, br)
 
 # Returns a grayscale version of a numpy image.
 def gray(img):
@@ -109,7 +110,7 @@ def build_pyramid(img, min_height=160, min_width=160, flat=False, debug=False):
         sizes.append(tuple([img.shape[1], img.shape[0]]))
         for size in sizes:
             if debug:
-                print size
+                print(size)
             yield cv2.resize(img, dsize=size)
 
 # Shrinks a numpy image to the stricter of the width and height constraints.

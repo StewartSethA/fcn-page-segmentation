@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import cv2
 
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     subdivision_amounts = [2, 3, 4, 5, 8, 16]
     data_dir = sys.argv[1]
     for jpg in [os.path.join(data_dir, f) for f in os.listdir(data_dir) if ".jpg" == f[-4:]]:
-        print "Processing", jpg
+        print("Processing", jpg)
         img = cv2.imread(jpg)
         base = os.path.basename(jpg).replace(".jpg", "")
         shape = img.shape
@@ -48,7 +49,7 @@ if __name__ == "__main__":
                     if mp_plus_hw > most_hw_plus_mp_pixels:
                         most_hw_plus_mp_pixels = mp_plus_hw
                         quadrant_with_most_hw_plus_mp_pixels = (x,y)
-                    print "Writing", out_crop.shape, "to", out_jpg
+                    print("Writing", out_crop.shape, "to", out_jpg)
                     cv2.imwrite(out_jpg, out_crop)
                     for c in range(gt.shape[-1]):
                         gt_crop = gt[u:b, l:r, c]
@@ -57,7 +58,7 @@ if __name__ == "__main__":
                             continue
                         out_gtlayer = output_file + "_" + str(c) + ".png"
                         cv2.imwrite(out_gtlayer, gt_crop*255)
-                        print "Writing", gt_crop.shape, "to", out_gtlayer
+                        print("Writing", gt_crop.shape, "to", out_gtlayer)
 
             x,y = quadrant_with_most_hw_plus_mp_pixels
             best_quadrant_base = base + "_" + str(x) + "_" + str(y)

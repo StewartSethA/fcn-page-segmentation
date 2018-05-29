@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import cv2
 import image_warper
@@ -50,15 +51,15 @@ class DataAugmenter(object):
         pass
 
     def augment(self, image, gt):
-        #print ("AUGMENTING!!!")
+        #print(("AUGMENTING!!!"))
         zoom_variability = 0 #self.zoom_probability #0 #0.13 #0.13 #33
         warp_probability = self.warp_probability #0.25
         noise_probability = self.noise_probability
-        #print ("AUGMENTING!!! 1")
+        #print(("AUGMENTING!!! 1"))
         downsampling_rate = 1.0
         if self.train and zoom_variability > 0:
             downsampling_rate *= (1.0 + zoom_variability * (2 * np.random.random() - 1))
-        #print ("AUGMENTING!!! 2")
+        #print(("AUGMENTING!!! 2"))
         augmentation_time = time.time()
         if self.train:
             for c in range(3):
@@ -70,7 +71,7 @@ class DataAugmenter(object):
                 image[:,:,c] *= cd
                 offset = np.random.uniform(0.0, 1.0-cd)
                 image[:,:,c] += offset
-        #print ("AUGMENTING!!! 3")
+        #print(("AUGMENTING!!! 3"))
         if self.train and np.random.random() < noise_probability:
             #print("Messing up input image for data augmentation!")
             #max_noise_pct = max_noise_level
@@ -92,14 +93,14 @@ class DataAugmenter(object):
                 #print("Adding", image)
                 image[0:size[0]*s,0:size[1]*s,:] += noiselevel * ndimage.zoom(np.random.random(size=size)*(2*np.random.random()-1)**3, res, order=2)
         image = np.clip(image, 0, 1)
-        #print ("AUGMENTING!!! 5")
+        #print(("AUGMENTING!!! 5"))
 
         for gtl in range(gt.shape[-1]):
             if self.dilate_gt_amount > 1:
                 #print("NONZERO pixels of class in field of view:", np.count_nonzero(gt[:,:,gtl]))
                 gt[:,:,gtl] = cv2.dilate(gt[:,:,gtl], kernel=np.ones((self.dilate_gt_amount,self.dilate_gt_amount)))
 
-        #print ("AUGMENTING!!! 5")
+        #print(("AUGMENTING!!! 5"))
 
         #if self.train and np.random.random() < warp_probability:
         #    imb, gtb = image_warper.warp_images(image, gt, borderValue=(1,1,1))

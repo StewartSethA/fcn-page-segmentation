@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cv2
 import numpy as np
 from scipy.interpolate import griddata
@@ -56,7 +57,7 @@ def warp_images(img, img2, config={}, borderValue=(255,255,255), warp_amount=0.1
 
     source = []
     for i in np.arange(0, h+0.0001, h_mesh_interval):
-        # print i
+        # print(i)
         for j in np.arange(0, w+0.0001, w_mesh_interval):
             source.append((i,j))
 
@@ -164,7 +165,7 @@ def warp_image(img, borderValue=(255,255,255), config={}):
 
     source = []
     for i in np.arange(0, h+0.0001, h_mesh_interval):
-        # print i
+        # print(i)
         for j in np.arange(0, w+0.0001, w_mesh_interval):
             source.append((i,j))
 

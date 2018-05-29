@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 from nn_utils import weight_variable, bias_variable, variable_summaries, nn_layer, conv2d, maxpool, relu
@@ -115,7 +116,7 @@ def cnn224x224_autoencoder_almostoptim(x_image, final_feats=10, keep_prob=0.5, b
     hi_feats = mid_feats
     capdepth = 3
     for i in range(0, capdepth):
-        print i, capdepth
+        print(i, capdepth)
         #feats = cnn_layer(ks=3, infeats=(1 if i == 0 else featmaps)), outfeats=(featmaps if i != depth-1 else final_feats), keep_prob=keep_prob, layer_num=i)
         hi_feats = cnn_layer(hi_feats, ks=ks, infeats=mf, outfeats=(mf if i != capdepth-1 else final_feats), keep_prob=keep_prob, nameprefix="f", layer_num=i)
     hi_feats = tf.nn.relu(hi_feats)
@@ -123,7 +124,7 @@ def cnn224x224_autoencoder_almostoptim(x_image, final_feats=10, keep_prob=0.5, b
     return hi_feats
 
 def cnn224x224_autoencoder_regionpred(x_image, final_feats=10, keep_prob=0.5, batch_size=64, fc=False, width=224, height=224, featmaps=16, ds=4, ks=3, dks=5, fc_layers=0, fc_feats=1024):
-    print "Using cnn224x224_autoencoder_regionpred model"
+    print("Using cnn224x224_autoencoder_regionpred model")
     depth = 1 #ds
     feats = x_image
     for i in range(0, depth):
@@ -163,7 +164,7 @@ def cnn224x224_autoencoder_regionpred(x_image, final_feats=10, keep_prob=0.5, ba
 
     capdepth = 3
     for i in range(0, capdepth):
-        print i, capdepth
+        print(i, capdepth)
         #feats = cnn_layer(ks=3, infeats=(1 if i == 0 else featmaps)), outfeats=(featmaps if i != depth-1 else final_feats), keep_prob=keep_prob, layer_num=i)
         hi_feats = cnn_layer(hi_feats, ks=ks, infeats=mf+featmaps, outfeats=(mf+featmaps if i != capdepth-1 else final_feats), keep_prob=keep_prob, nameprefix="f", layer_num=i)
     hi_feats = tf.nn.relu(hi_feats)
@@ -243,7 +244,7 @@ def cnn224x224_autoencoder_nodownsampling(x_image, final_feats=10, keep_prob=0.5
     return y_conv
 
 def cnn224x224_autoencoder(x_image, final_feats=10, keep_prob=0.5, batch_size=64, featmaps = 32, fc=True, width=224, height=224):
-    print "Creating standard autoencoder."
+    print("Creating standard autoencoder.")
     W_conv1 = weight_variable([3, 3, 1, featmaps/4], name="W1")  # 224
     b_conv1 = bias_variable([featmaps/4], name="b1")
     h_conv1 = relu(conv2d(x_image, W_conv1) + b_conv1)

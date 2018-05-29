@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 import math
@@ -8,7 +9,7 @@ from nn_utils import weight_variable, bias_variable, variable_summaries, conv_no
 # A constructor for a single ResNet layer.
 ###########################################################################################################
 def resnet_layer(input_tensor, num_inputs, num_outputs=64, kernel_size=(3,3), padding=(1,1), strides=(1,1), nonlinearity=tf.nn.relu, layer_name="resnet_layer"):
-    print "Adding resnet layer: " + layer_name + " " + str(num_inputs) + " => " + str(num_outputs)
+    print("Adding resnet layer: " + layer_name + " " + str(num_inputs) + " => " + str(num_outputs))
     with tf.variable_scope(layer_name):
         # ResNet1
         with tf.variable_scope("resnet1"):
@@ -54,7 +55,7 @@ def resnet_layer(input_tensor, num_inputs, num_outputs=64, kernel_size=(3,3), pa
 # Standard ResNet with the desired number of output features.
 ###########################################################################################################
 def resnet(input_tensor, input_width, input_height, input_channels=1, start_feats=32, num_layers=27, target_width=5, target_height=5, nonlin=tf.nn.relu): # Alternative interface: Allow for input of set layer numbers and factors for downsampling.
-    print "Building resnet with " + str(num_layers) + " (x2) layers."
+    print("Building resnet with " + str(num_layers) + " (x2) layers.")
     init_featmaps=input_channels # 32
     current_featmaps = last_featmaps = init_featmaps
     ks = (3,3)
@@ -73,7 +74,7 @@ def resnet(input_tensor, input_width, input_height, input_channels=1, start_feat
 
     # Compute the intervals for downsampling to reach target width and height in time.
     for layer_num in range(0, num_layers+1):
-        print "Adding layer " + str(layer_num)
+        print("Adding layer " + str(layer_num))
         # RESNET layer
         if layer_num > 0:
             current_output, wts = resnet_layer(current_output, current_featmaps, current_featmaps, ks, ps, ss, nonlin, "resnet_layer"+str(layer_num))
@@ -84,10 +85,10 @@ def resnet(input_tensor, input_width, input_height, input_channels=1, start_feat
         if layer_num == 0 or (layer_num > 1 and (layer_num - 1 + layers_between_downsamplings/2) % layers_between_downsamplings == 0):
             if layer_num > 1:
                 # Add a pooling layer
-                print "Downsampling with 2x2 max pooling"
+                print("Downsampling with 2x2 max pooling")
                 current_output = tf.nn.max_pool(current_output, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
                 current_featmaps *= 2 # Double feature maps on each downsample to preserve content
-            print "Adding conv_nonlin layer" + "conv_nonlin" + str(layer_num)
+            print("Adding conv_nonlin layer" + "conv_nonlin" + str(layer_num))
             # UPSAMPLE feature maps only (not spatial dimensions) using a convolutional layer
             current_output, wts = conv_nonlin(current_output, last_featmaps, current_featmaps, ks, ss, ps, nonlin, "conv_nonlin" + str(layer_num), bias_init=1.0)
             allweights.extend(wts)
@@ -101,7 +102,7 @@ def resnet(input_tensor, input_width, input_height, input_channels=1, start_feat
 # TODO: Currently downsampling is being done through max pooling layers, with a corresponding feature map doubling convolutional layer. An upgrade to allow strided resampling
 # is desirable (all-convolutional, minimal pooling)
 def resnet(input_tensor, input_width, input_height, input_channels=1, start_feats=32, num_layers=27, target_width=5, target_height=5, nonlin=tf.nn.relu): # Alternative interface: Allow for input of set layer numbers and factors for downsampling.
-    print "Building resnet with " + str(num_layers) + " (x2) layers."
+    print("Building resnet with " + str(num_layers) + " (x2) layers.")
     init_featmaps=input_channels # 32
     current_featmaps = last_featmaps = init_featmaps
     ks = (3,3)
@@ -120,7 +121,7 @@ def resnet(input_tensor, input_width, input_height, input_channels=1, start_feat
 
     # Compute the intervals for downsampling to reach target width and height in time.
     for layer_num in range(0, num_layers+1):
-        print "Adding layer " + str(layer_num)
+        print("Adding layer " + str(layer_num))
         # RESNET layer
         if layer_num > 0:
             current_output, wts = resnet_layer(current_output, current_featmaps, current_featmaps, ks, ps, ss, nonlin, "resnet_layer"+str(layer_num))
@@ -131,10 +132,10 @@ def resnet(input_tensor, input_width, input_height, input_channels=1, start_feat
         if layer_num == 0 or (layer_num > 1 and (layer_num - 1 + layers_between_downsamplings/2) % layers_between_downsamplings == 0):
             if layer_num > 1:
                 # Add a pooling layer
-                print "Downsampling with 2x2 max pooling"
+                print("Downsampling with 2x2 max pooling")
                 current_output = tf.nn.max_pool(current_output, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
                 current_featmaps *= 2 # Double feature maps on each downsample to preserve content
-            print "Adding conv_nonlin layer" + "conv_nonlin" + str(layer_num)
+            print("Adding conv_nonlin layer" + "conv_nonlin" + str(layer_num))
             # UPSAMPLE feature maps only (not spatial dimensions) using a convolutional layer
             current_output, wts = conv_nonlin(current_output, last_featmaps, current_featmaps, ks, ss, ps, nonlin, "conv_nonlin" + str(layer_num), bias_init=1.0)
             allweights.extend(wts)
@@ -156,7 +157,7 @@ def resnet28x28(input_tensor, init_channels):
     current_output = input_tensor
     layer_num = 1
 
-    print "Group 1"
+    print("Group 1")
     current_output, _ = conv_nonlin(input_tensor, input_channels, init_featmaps, ks, ss, ps, nonlin, "conv1") # 256x256 x B x F
     layer_num += 1
 
@@ -172,7 +173,7 @@ def resnet28x28(input_tensor, init_channels):
     current_output = tf.nn.max_pool(current_output, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     current_featmaps *= 2 # 14 x 14 x 64
 
-    print "Group 2"
+    print("Group 2")
     current_output, _ = conv_nonlin(current_output, last_featmaps, current_featmaps, ks, ss, ps, nonlin, "conv2") # 256x256 x B x F
     layer_num += 1
 
@@ -188,7 +189,7 @@ def resnet28x28(input_tensor, init_channels):
     current_output = tf.nn.max_pool(current_output, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     current_featmaps *= 2 # 7 x 7 x 128
 
-    print "Group 3"
+    print("Group 3")
     current_output, _ = conv_nonlin(current_output, last_featmaps, current_featmaps, ks, ss, ps, nonlin, "conv3") # 256x256 x B x F
     layer_num += 1
 
@@ -229,7 +230,7 @@ def resnet_bydepths(input_tensor, depths=[3,5,3]):
     for depth_reducts in depths:
         print("Depth reduction:")
         for lnum in range(0, depth_reducts):
-            print "Layer: " + str(layer_num)
+            print("Layer: " + str(layer_num))
             if last_featmaps != current_featmaps:
                 sst = [1,2,2,1]
             else:
@@ -300,5 +301,5 @@ def resnet56(image_batch, init_channels=1, output_feats=10):
     h_fc1_drop = h_fc1 #tf.nn.dropout(h_fc1, keep_prob)
     feature_embedding = h_fc1_drop
 
-    print "Using resnet 56x56"
+    print("Using resnet 56x56")
     return feature_embedding, [W_fc1,]

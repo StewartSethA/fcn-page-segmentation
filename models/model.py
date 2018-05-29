@@ -1,3 +1,4 @@
+from __future__ import print_function
 def build_model(args):
     if args.framework.lower() == "keras":
         from keras_models import build_model as model_builder

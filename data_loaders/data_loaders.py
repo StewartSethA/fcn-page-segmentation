@@ -1,3 +1,4 @@
+from __future__ import print_function
 """
 Data loaders (inputs and ground truth) for semantic segmentation (pixel-labeling) tasks.
 
@@ -344,7 +345,7 @@ class PerformanceFeedbackDatasetSampler(DatasetSampler):
             randind = 0
         else:
             randind = np.random.randint(0, len(self.class_to_samples[c]))
-        #print self.class_to_samples[c]
+        #print(self.class_to_samples[c])
         image_path = self.class_to_samples[c][randind]
         self.resampled_imagebalance[c][image_path] += 1
 
@@ -449,7 +450,7 @@ class ImageAndGTBatcher(object):
 
                 # TODO: GT images are still off by a bit, and sometimes the GT image is scaled up in one dimension vs the original.
                 #if self.textsempred:
-                #    #print clasnum, clas, self.class_training_exemplar_generators, self.class_training_exemplar_generators[0]
+                #    #print(clasnum, clas, self.class_training_exemplar_generators, self.class_training_exemplar_generators[0])
                 #    imb, gtb = self.class_training_exemplar_generators[clas](img, mask, self.charmasks, maskval=0, numclasses=self.num_classes, label=clasnum, minsize=int(self.height*self.min_height_scale), maxsize=ms, height=self.height, width=self.width, maskchannel=clasnum, page=self.page, char_to_idx=self.char_to_idx)
                 #elif self.textpred:
                 #    imb, gtb, cph = self.class_training_exemplar_generators[clas](img, mask, maskval=0, numclasses=self.num_classes, label=clasnum, minsize=int(self.height*self.min_height_scale), maxsize=ms, height=self.height, width=self.width, maskchannel=clasnum, page=self.page, char_to_idx=self.char_to_idx)
@@ -459,7 +460,7 @@ class ImageAndGTBatcher(object):
 
                 #if random.random() < warp_probability:
                 #    imb, gtb = image_warper.warp_images(imb, gtb, borderValue=(1.0,1.0,1.0), warp_amount=0.1) # TODO: Warp both images by the same amount!
-                #print "===", imb.shape, gtb.shape
+                #print("===", imb.shape, gtb.shape)
                 if len(ims) == b:
                     ims.append(imb)
                     gts.append(gtb)
@@ -477,7 +478,7 @@ class ImageAndGTBatcher(object):
             self.gt = np_batch_gts[0]
             #if self.textpred:
             #    return np_batch_imgs, np_batch_gts, np_batch_chs
-            #print "Woohoo!!!!!", np_batch_imgs.shape, np_batch_gts.shape
+            #print("Woohoo!!!!!", np_batch_imgs.shape, np_batch_gts.shape)
             yield(np_batch_imgs, np_batch_gts)
 
     ##### GENERATE a training sample.

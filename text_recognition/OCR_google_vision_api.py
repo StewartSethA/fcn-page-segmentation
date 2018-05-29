@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -31,7 +32,7 @@ def send_request(image_path):
         import cv2
         img = cv2.imread(image_path)
         if img.shape[0]*img.shape[1] < 300*1000: # Switch to cheaper text detection for smaller image patches
-            print "Doing cheap text detection..."
+            print("Doing cheap text detection...")
             request_data["requests"][0]["features"][0]["type"] = "TEXT_DETECTION"
         serialized_request_data = json.dumps(request_data)
         r = requests.post(url, data=serialized_request_data)

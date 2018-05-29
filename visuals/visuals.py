@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -45,7 +46,7 @@ def get_pred_gt_diff(pred, gt, img=None):
 from data_loaders.utils import enum_to_onehot as make_onehot
 from evaluation.evaluations import score
 def show(im, gt, pred, maxh, maxw, impath=None, batch_num=0, label="", do_show=False):
-    #print "SHOW gt shape:", gt.shape, pred.shape, im.shape
+    #print("SHOW gt shape:", gt.shape, pred.shape, im.shape)
     fx = 1.0
     if im.shape[0] > 3000:
         fx = 1.0 #1.0/8
