@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 if not dir_path in sys.path:
@@ -37,26 +38,26 @@ def train(args):
     model_type = args.model_type
     ds_rate = 1.0
 
-    print ""
-    print "Using framework", args.framework
-    print "Epochs:", args.epochs
-    print "Steps per epoch:", args.steps_per_epoch
-    print ""
+    print("")
+    print("Using framework", args.framework)
+    print("Epochs:", args.epochs)
+    print("Steps per epoch:", args.steps_per_epoch)
+    print("")
 
     # Index the training set for efficient caching and batching, including class rebalancing.
-    print "Training folder", training_folder
+    print("Training folder", training_folder)
     suffix_to_class_map = autodiscover_suffix_to_class_map(training_folder, ["jpg", "png", "tif"])
-    print "Inferred suffix to class map:", suffix_to_class_map
+    print("Inferred suffix to class map:", suffix_to_class_map)
     if len(suffix_to_class_map) > 0:
         num_classes = len(suffix_to_class_map)
         args.num_classes = num_classes
     index = index_training_set_by_class(training_folder, num_classes=num_classes, suffix_to_class_map=suffix_to_class_map)
     class_to_samples, image_list, pixel_counts_byclass = index
     if len(image_list) == 0:
-        print "No images found in training folder! Cannot train; aborting!"
+        print("No images found in training folder! Cannot train; aborting!")
         exit()
     if sum([len(class_to_samples[c]) for c in class_to_samples.keys()]) == 0:
-        print "No class samples indexed! Cannot train; aborting!", class_to_samples
+        print("No class samples indexed! Cannot train; aborting!", class_to_samples)
         exit()
     print("Number of samples per class:", {c:len(class_to_samples[c]) for c in class_to_samples.keys()})
     training_generator_class = ImageAndGTBatcher(args.training_folder, num_classes, batch_size, index=index, downsampling_rate=ds_rate, crop_size=in_width, suffix_to_class_map=suffix_to_class_map)
@@ -69,7 +70,7 @@ def train(args):
 
     # Optionally include a validation set for display, early stopping, and mini-validation during training.
     # If none is supplied, the training set will be used for real-time display, etc.
-    print "Validation folder", validation_folder
+    print("Validation folder", validation_folder)
     validation_folder = sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
     validation_generator_class = ImageAndGTBatcher(args.validation_folder, num_classes, batch_size=1, downsampling_rate=ds_rate, train=False, cache_images=True, suffix_to_class_map=suffix_to_class_map)
     validation_generator = validation_generator_class.generate()
@@ -82,10 +83,10 @@ def train(args):
     if not os.path.exists(args.log_dir):
         _mkdir(args.log_dir)
 
-    print ">>>> Log dir", args.log_dir, "Save path", args.model_save_path
+    print(">>>> Log dir", args.log_dir, "Save path", args.model_save_path)
     if args.log_dir != os.path.dirname(args.model_save_path):
         args.model_save_path = os.path.join(args.log_dir, args.model_save_path)
-        print "UPDATED", args.model_save_path
+        print("UPDATED", args.model_save_path)
         model_save_path = args.model_save_path
 
     # BUILD the appropriate model, depending on the framework and model construction parameters.
@@ -93,7 +94,7 @@ def train(args):
         args.load_model_path = args.load_model_path + ".h5"
     model = build_model(args)
 
-    # Now print memory stats, including estimated model size.
+    # Now print(memory stats, including estimated model size.)
     mem_after_load = psutil.virtual_memory().used
     print("VIRTUAL MEMORY AFTER MODEL CREATION:", mem_after_load)
     print("Estimated model size in memory:", mem_after_load - mem_orig)
@@ -166,11 +167,11 @@ def train(args):
     #try:
     model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
     #except Exception as ex:
-    #    print "Exception caught!"
-    #    print ex
-    print "Training is COMPLETE."
+    #    print("Exception caught!")
+    #    print(ex)
+    print("Training is COMPLETE.")
     for i in range(100):
-        print ""
+        print("")
     #testmodelcb = TestModelCallback(model, save_basepath="best_model", testfolder=testfolder, testscale=1.0)
     #callbacks.append(testmodelcb)
     #TODO: callbacks.append(TensorBoardWrapper(validation_generator, nb_steps=1, log_dir='./tensorboard_logs', histogram_freq=1, write_graph=True)) #, write_images=True, embeddings_freq=1, write_grads=True)) #, write_grads=True, write_images=True, embeddings_freq=1, embeddings_layer_names=None, embeddings_metadata=None))

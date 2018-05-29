@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib.pyplot as plt
 plt.ion()
 import numpy as np
@@ -93,7 +94,7 @@ class DisplayTrainingSamplesCallback(Callback):
     def on_batch_end(self, batch, logs={}):
         self.batch_num += 1
         if self.batch_num % self.interval == 0:
-            print "DisplayTrainingSamplesCallback"
+            print("DisplayTrainingSamplesCallback")
             if self.training_generator.gt is not None:
                 plt.figure("Training_GT")
                 plt.clf()
@@ -111,10 +112,10 @@ class DisplayTrainingSamplesCallback(Callback):
                     im = self.training_generator.image
                     plt.figure("Training_Prediction")
                     plt.clf()
-                    print "DisplayTrainingSamplesCallback input shape", im.shape
+                    print("DisplayTrainingSamplesCallback input shape", im.shape)
                     self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
-                    print "Pred shape:", self.pred.shape
-                    print "Pred min/max:", np.min(self.pred), np.max(self.pred)
+                    print("Pred shape:", self.pred.shape)
+                    print("Pred min/max:", np.min(self.pred), np.max(self.pred))
                     plt.imshow((show(self.pred, bgr=True)), interpolation='none')
                     if self.log_dir is not None:
                         plt.savefig(os.path.join(self.log_dir, "TrainPred.png"))
@@ -122,8 +123,8 @@ class DisplayTrainingSamplesCallback(Callback):
 
 #if (self.iteration+1)%self.display_interval == 0:
 #ls,train_accuracy,logits = self.sess.run([self.loss, self.accuracy, self.y_conv], feed_dict={self.x:1.0-batch[0], self.y_:batch[1], self.keep_prob: 1.0})
-#print ls, train_accuracy
-#print ("Step %d, loss %g, training accuracy %g"%(self.iteration, ls, train_accuracy))#, "logits:", logits)
+#print(ls, train_accuracy)
+#print(("Step %d, loss %g, training accuracy %g"%(self.iteration, ls, train_accuracy))#, "logits:", logits))
 
 class DisplayActivationsCallback(Callback):
     def __init__(self, model=None, input_generator=None):
@@ -255,7 +256,7 @@ class DisplayAccuracyCallback(Callback):
         print("")
         print("========= Performing Validation... ===========")
         batch_x, batch_y = next(self.generator)
-        print "Batch x, y shapes:", batch_x.shape, batch_y.shape
+        print("Batch x, y shapes:", batch_x.shape, batch_y.shape)
         print("Making predictions...")
         preds = self.model.predict(batch_x, batch_size=batch_x.shape[0])
         print("Preds shape:", preds.shape)
@@ -304,11 +305,11 @@ class DisplayAccuracyCallback(Callback):
         #if self.model is not None:
         plt.figure("Validation_Prediction")
         plt.clf()
-        print "DisplayValidationSamplesCallback input shape", im.shape
+        print("DisplayValidationSamplesCallback input shape", im.shape)
         #self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
         self.pred = preds[0]
-        print "Pred shape:", self.pred.shape
-        print "Pred min/max:", np.min(self.pred), np.max(self.pred)
+        print("Pred shape:", self.pred.shape)
+        print("Pred min/max:", np.min(self.pred), np.max(self.pred))
         plt.imshow((show(self.pred, bgr=True)), interpolation='none')
         plt.pause(0.001)
 
@@ -359,13 +360,13 @@ class DisplayAccuracyCallback(Callback):
         cm = CachedMetrics(batch_y[0], preds[0])
         precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = cm["precision"], cm["recall"], cm["accuracy"], cm["f1_score"], cm["gt_mass"], cm["true_positives"]
         import sys
-        print "Size of CM:", sys.getsizeof(cm)
-        print "Size of self:", sys.getsizeof(self)
+        print("Size of CM:", sys.getsizeof(cm))
+        print("Size of self:", sys.getsizeof(self))
         cm = None
 
         #precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = score(batch_y, preds)
 
-        print precisions.shape, recalls.shape, accuracies.shape, f_scores.shape, tot_gt_mass.shape, overall_correct.shape
+        print(precisions.shape, recalls.shape, accuracies.shape, f_scores.shape, tot_gt_mass.shape, overall_correct.shape)
         if self.training_generator_class is not None:
             self.training_generator_class.class_fscores = f_scores
 
@@ -521,7 +522,7 @@ class DisplayAccuracyCallback(Callback):
         #print("Memory:", mem)
         #from guppy import hpy
         #h = hpy()
-        #print h.heap()
+        #print(h.heap())
 
         val_json = {"Loss": self.losses, "Precision":self.prec, "Recall": self.reca, "F-Score": self.fscore, "Accuracy": self.pixacc}
         #print(val_json)
@@ -540,8 +541,8 @@ def display_stats(tensor, name="None", numbins=10):
     #plt.hist(hist, bins=numbins)
     #plt.savefig(name+".png")
     #plt.close(fig)
-    #print "Histogram of weights for tensor", name, hist
-    print name, "Mean:", np.mean(tensor), "StdDev:", np.std(tensor), "Median", np.median(tensor)
+    #print("Histogram of weights for tensor", name, hist)
+    print(name, "Mean:", np.mean(tensor), "StdDev:", np.std(tensor), "Median", np.median(tensor))
 
 class DisplayWeightStatsCallback(Callback):
     def __init__(self, model):
@@ -555,7 +556,7 @@ class DisplayWeightStatsCallback(Callback):
             weights = self.model.get_weights()
             for i,weight in enumerate(weights):
                 print("Displaying weights for", i)
-                print weight.shape
+                print(weight.shape)
                 display_stats(weight, "Weight"+str(i)+"_"+str(weight.shape))
                 self.model.weights_good = False
         self.iteration += 1
@@ -652,7 +653,7 @@ class TFModelSaverCallback(Callback):
     def on_batch_end(self, batch, logs={}):
         self.iteration += 1
         if self.iteration > 0 and self.iteration % self.save_interval == 0:
-            print "Saving model..."
+            print("Saving model...")
             dirname = os.path.dirname(self.model_save_path)
             if not os.path.exists(dirname):
                 _mkdir(dirname)

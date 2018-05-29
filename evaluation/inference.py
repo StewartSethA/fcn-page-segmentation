@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Old HBA code. Blah. #TODO: GO through this and salvage anything useful.
 import numpy as np
 import os
@@ -565,7 +566,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                         overlay = output.copy() #cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
                     for randx in np.arange(offy,img.shape[1],width/div):
 
-                        #print randpc, "/", max_attempts
+                        #print(randpc, "/", max_attempts)
                         #randx = random.randint(0,img.shape[1]-28)
                         #randy = random.randint(0,img.shape[0]-28)
                         #overlay.fill(0)
@@ -582,19 +583,19 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
 
                         im_batch[num_in_batch] = np.reshape(crop, [height, width, 1])/255.0
                         xys.append((randx, randy))
-                        #print randx, randy
+                        #print(randx, randy)
                         num_in_batch += 1
                         tot_regions += 1
 
                         if num_in_batch == self.batch_size or (randy >= img.shape[0]-height-1 and randx >= img.shape[1]-width-1):
-                            #print im_batch.shape, gt_label.shape
+                            #print(im_batch.shape, gt_label.shape)
                             # RUN RUN RUN RUN RUN RUN RUN !!!!!!!
                             recs = self.sess.run(self.y_conv, feed_dict={self.x:1.0-im_batch, self.y_:gt_label, self.keep_prob:1.0})
-                            #print "Ran recognition batch:", recs.shape
+                            #print("Ran recognition batch:", recs.shape)
                             regions_drawn += len(xys)
                             for b in range(len(xys)): #range(recs.shape[0]):
                                 #rec = recs[b][13][13]
-                                #print rec.shape
+                                #print(rec.shape)
                                 #recInd = np.argmax(rec[0:12])
                                 #angleInd = np.argmax(rec[12:16])
                                 #angle = angleInd * 90
@@ -608,7 +609,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                                 #cv2.imshow('original_patch', im_batch[b])
                                 #cv2.waitKey(wait)
                                 rx, ry = xys[b]
-                                #print scale, ry, ry+int(height/scale), rx, rx+int(width/scale)
+                                #print(scale, ry, ry+int(height/scale), rx, rx+int(width/scale))
                                 h,w,_ = densepreds[int(ry/scale):int((ry+height)/scale),int(rx/scale):int((rx+width)/scale),:].shape
                                 #try:
                                 densepreds[int(ry/scale):int((ry+height)/scale),int(rx/scale):int((rx+width)/scale),:] += cv2.resize(r, (int(height/scale), int(width/scale)), interpolation=cv2.INTER_LINEAR)[0:h,0:w,:] # Add into image sum.
@@ -632,7 +633,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                                             #else:
                                             #    cv2.rectangle(overlay, (rx+px, ry+py), (rx+px, ry+py), (0, 0, 0), -1) # Unk is black
 
-                            #print rec
+                            #print(rec)
                             if display:
                                 alpha = 0.5
                                 cv2.addWeighted(overlay, alpha, output, 1.0-alpha, 0, output)
@@ -643,7 +644,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                             gt_label = np.zeros((self.batch_size, height, width, num_classes))
                             im_batch = np.zeros((self.batch_size, height, width, 1))
                             xys = []
-        print tot_regions, "Total regions recognized", regions_drawn, "drawn"
+        print(tot_regions, "Total regions recognized", regions_drawn, "drawn")
         #blurred = cv2.blur(output, (2*height/div, 2*width/div))
         #cv2.imshow('Blurred', blurred)
         densepreds = densepreds / tot_masks
@@ -656,8 +657,8 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
         densepredscopy[:,:,2] += densepredscopy[:,:,self.class_to_num['lines']]/2.0
         densepredscopy = (np.clip(densepredscopy[:,:,:3], 0, 1)*255.0).astype('uint8')
         for i in range(10):
-            print ""
-        print page["image_path"]
+            print("")
+        print(page["image_path"])
         oimp = page["image_path"].replace(test_folder, output_folder)
         cv2.imwrite(oimp + "_SS_RGB"+ext, densepredscopy)
         densepreds = (np.clip(densepreds[:,:,:], 0, 1)*255.0).astype('uint8')
@@ -672,5 +673,5 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
         if display:
             cv2.imshow("Dense Averaged Multi-scale predictions", densepreds[:,:,0:3])
             cv2.waitKey(10)
-        print "Done recognizing."
+        print("Done recognizing.")
         return densepreds

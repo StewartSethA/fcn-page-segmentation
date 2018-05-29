@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 
 def model_size(model): # Compute number of params in a model (the actual number of floats)

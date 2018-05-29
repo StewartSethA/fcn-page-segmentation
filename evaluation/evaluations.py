@@ -1,3 +1,4 @@
+from __future__ import print_function
 """
 evaluations.py
 
@@ -639,9 +640,9 @@ def score_and_visualize_errors(gtfile, predfile, gtthreshold=0.5, predthreshold=
     s = score(gt, pred, gtthreshold, predthreshold)
     visualize_errors(predfile, gt, pred, gtthreshold, predthreshold)
     for metric in standard_metrics:
-        print metric, s[metric]
+        print(metric, s[metric])
     for metric in standard_metrics:
-        print "Average", metric, np.mean(s[metric])
+        print("Average", metric, np.mean(s[metric]))
     return s
 
 def visualize_confusion(outpath, confusion):
@@ -652,26 +653,26 @@ def visualize_confusion(outpath, confusion):
 def score_and_visualize_folders(gt_dir, test_dir, gtthreshold=0.5, predthreshold=0.5):
     test_images = [os.path.join(gt_dir, f) for f in os.listdir(gt_dir) if '.jpg' == f[-4:]]
     pred_files = [f.replace(gt_dir, test_dir) for f in test_images]
-    print "Test images", test_images
-    print ""
-    print "Pred files", pred_files
-    print ""
+    print("Test images", test_images)
+    print("")
+    print("Pred files", pred_files)
+    print("")
     scores = defaultdict(list)
     for f,f2 in zip(test_images, pred_files):
-        print "Evaluating", f, f2
+        print("Evaluating", f, f2)
         s = score_and_visualize_errors(f, f2, gtthreshold, predthreshold)
         visualize_confusion(f2, s["confusion"])
         for metric in standard_metrics:
             scores[metric].append(s[metric])
-        print ""
+        print("")
 
-    print "Averages for entire directory: (", len(test_images) ,"items )"
+    print("Averages for entire directory: (", len(test_images) ,"items )")
     for metric in standard_metrics:
         scores[metric] = np.array(scores[metric])
-        print metric, np.mean(scores[metric], axis=0)
+        print(metric, np.mean(scores[metric], axis=0))
     visualize_confusion(f2, np.mean(scores["confusion"]))
     for metric in standard_metrics:
-        print "Average", metric, np.mean(scores[metric])
+        print("Average", metric, np.mean(scores[metric]))
 
 if __name__ == "__main__":
     import sys
@@ -684,9 +685,9 @@ if __name__ == "__main__":
             gtthreshold = float(sys.argv[4])
         if os.path.isfile(sys.argv[1]):
             f,f2 = sys.argv[1],sys.argv[2]
-            print "Evaluating", f, f2
+            print("Evaluating", f, f2)
             score_and_visualize_errors(f, f2, gtthreshold, predthreshold)
-            print ""
+            print("")
         else:
             score_and_visualize_folders(sys.argv[1], sys.argv[2], gtthreshold, predthreshold)
     else:
@@ -697,12 +698,12 @@ if __name__ == "__main__":
             unittest.main(verbosity=2)
             cm = CachedMetrics(np.random.random((10,10,6)), np.ones((10,10,6)))
             cm = CachedMetrics(np.random.random((10,10,6)), np.random.random((10,10,6)))
-            print cm["recall"]
-            print cm["precision"]
-            print cm["f1_score"]
-            print cm["accuracy"]
-            print cm["intersection_over_union"]
-            print cm["foreground_accuracy"]
+            print(cm["recall"])
+            print(cm["precision"])
+            print(cm["f1_score"])
+            print(cm["accuracy"])
+            print(cm["intersection_over_union"])
+            print(cm["foreground_accuracy"])
             # TO compute overlap versions of the metric, recompute with masked versions, only including in preds and gts
             # those areas that contain overlapped pixels.
         # Perform evaluation on the contents of the target folder.

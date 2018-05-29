@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys,os
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -16,16 +17,16 @@ def select_best_thresholds(validationtxts):
             thresh = thresh[:thresh[1:].index(".")+1]
             thresh = float(thresh)
             fscore = float(lines[-2].split(" ")[-1])
-            print thresh, fscore
+            print(thresh, fscore)
             thresholds.append(thresh)
             fscores.append(fscore)
             overlap_fscores.append(lines[-3].split(" ")[-1])
-            print lines[-27-6]
+            print(lines[-27-6])
             for l in range(28,27+6):
                 line = lines[-l].split(" ")
-                print line
+                print(line)
                 class_fscores[line[0]].append(float(line[-1]))
-            print lines[-27-6-6]
+            print(lines[-27-6-6])
             for l in range(22+6+6,27+6+6):
                 line = lines[-l].split(" ")
                 class_accuracies[line[0]].append(float(line[-1]))
@@ -42,7 +43,7 @@ def select_best_thresholds(validationtxts):
 if __name__ == "__main__":
     vals = os.listdir(sys.argv[1])
     vals = [os.path.join(sys.argv[1], v) for v in vals if "validation" in v and ".txt" in v and v != "validation.txt"]
-    print vals
+    print(vals)
     thresholds, fscores, class_fscores = select_best_thresholds(vals)
     import numpy as np
     best_class_fscores = []
@@ -51,14 +52,14 @@ if __name__ == "__main__":
         i = np.argmax(fsc)
         best_threshold = thresholds[i]
         score = fsc[i]
-        print "Best threshold for class"+c+":", best_threshold, "with Average F-score:", score
+        print("Best threshold for class"+c+":", best_threshold, "with Average F-score:", score)
         best_class_fscores.append(score)
     i = np.argmax(fscores)
     best_threshold = thresholds[i]
     score = fscores[i]
-    print "Best overall threshold:", best_threshold, "with Average F-score:", score
+    print("Best overall threshold:", best_threshold, "with Average F-score:", score)
     mcsf = np.mean(best_class_fscores)
     default_i = thresholds.index(0.5)
     default_score = fscores[default_i]
-    print "Improvement by selecting overall threshold instead of default (0.5):", score, (score-default_score)
-    print "Improvement by selecting class-specific thresholds:", mcsf, (mcsf-score)
+    print("Improvement by selecting overall threshold instead of default (0.5):", score, (score-default_score))
+    print("Improvement by selecting class-specific thresholds:", mcsf, (mcsf-score))

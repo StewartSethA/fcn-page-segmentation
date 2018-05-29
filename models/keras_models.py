@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from nn_utils import model_size
 import keras
@@ -25,7 +26,7 @@ import os
 #
 
 def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, rate=1, functions=None, residual=False):
-    print "multihead"
+    print("multihead")
     head_outputs = []
     first = layer
     make_functions = False
@@ -33,7 +34,7 @@ def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, 
         make_functions = True
         functions = []
     for head_num in range(heads):
-        #print "head_num", head_num
+        #print("head_num", head_num)
         layer = first
         if make_functions:
             function = Conv2D(atom_nf, (1,1), use_bias=False, activation='linear',padding='same')
@@ -45,7 +46,7 @@ def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, 
         layer = depthwise_conv
         start_layer = layer
         for d_e in range(d):
-            #print "depth", d_e
+            #print("depth", d_e)
             #layer = GaussianDropout(drop)(layer)
             if make_functions:
                 function = Conv2D(atom_nf, ks, use_bias=False, dilation_rate=rate, activation='linear',padding='same')
@@ -149,12 +150,12 @@ class euclidean_network(Layer):
 # I think I might know enough to be able to implement this now.
 
 def make_multirate_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, rates=[1,2,4,8], residual=False):
-    print "multirate_multihead"
+    print("multirate_multihead")
     first = layer
     functions = None
     concatted_outputs = []
     for rate in rates:
-        print "rate", rate
+        print("rate", rate)
         # Tie parameters among different rates. This is gonna be cool.
         output, functions = make_multihead(first, heads=heads, nf=nf, atom_nf=atom_nf, ks=ks, d=d, drop=drop, rate=rate, functions=functions, residual=residual)
         concatted_outputs.append(output)
@@ -169,7 +170,7 @@ def build_dilated_net_layers(layer, num_classes=6, num_input_channels=3, depth=5
     layer = make_multirate_multihead(layer, heads=heads, atom_nf=atom_nf, ks=(11,11), d=1, drop=0.1, rates=[1,2,4,8])
     layer = BatchNormalization()(layer)
     for layer_num in range(depth):
-        print "mainlayer", layer_num
+        print("mainlayer", layer_num)
         layer = make_multirate_multihead(layer, heads=heads, atom_nf=atom_nf, ks=(3,3), d=2, drop=0.1, rates=rates, residual=True)
         if attention_size is not None:
             # TODO: Replace attention itself with multirate multihead conv!!
@@ -279,7 +280,7 @@ def densenet_for_semantic_segmentation(num_classes=6, dense_block_init_feats=8, 
     model.compile(loss=per_class_margin, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     if os.path.exists(model_save_path):
-        print "Loading existing model weights..."
+        print("Loading existing model weights...")
         model.load_weights(model_save_path, by_name=True)
     return model
 
@@ -452,7 +453,7 @@ def build_model_functional_old(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32]
     model.compile(loss=per_class_margin, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     if os.path.exists(model_save_path):
-        print "Loading existing model weights..."
+        print("Loading existing model weights...")
         model.load_weights(model_save_path, by_name=True)
     return model #, flatmodel
 
@@ -604,7 +605,7 @@ def full_res_net(num_classes=6, input_channels=3, model_save_path='model.h5'):
     predictions = Activation(K.softmax)(predictions)
     model = Model(inputs=model_inputs, outputs=predictions)
 
-    print "Model size:", model_size(model)
+    print("Model size:", model_size(model))
 
     model.compile(loss=pseudo_f_measure_loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0002)) #'nadam' #'adadelta')
     #model.compile(loss='poisson', metrics=['accuracy'], optimizer='nadam') #'nadam' #'adadelta')
@@ -612,7 +613,7 @@ def full_res_net(num_classes=6, input_channels=3, model_save_path='model.h5'):
     #model.compile(loss=pixelwise_crossentropy, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0002)) #'adadelta')
 
     if os.path.exists(model_save_path):
-        print "Loading existing model weights..."
+        print("Loading existing model weights...")
         model.load_weights(model_save_path, by_name=True)
     return model
 
@@ -634,7 +635,7 @@ import keras
 import keras.backend as K
 
 def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, rate=1, functions=None, residual=False):
-    print "multihead", heads, atom_nf, ks
+    print("multihead", heads, atom_nf, ks)
     head_outputs = []
     first = layer
     make_functions = False
@@ -642,7 +643,7 @@ def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, 
         make_functions = True
         functions = []
     for head_num in range(heads):
-        #print "head_num", head_num
+        #print("head_num", head_num)
         layer = first
         if make_functions:
             function = Conv2D(atom_nf, (1,1), use_bias=False, activation='linear',padding='same')
@@ -654,7 +655,7 @@ def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, 
         layer = depthwise_conv
         start_layer = layer
         for d_e in range(d):
-            #print "depth", d_e
+            #print("depth", d_e)
             #layer = GaussianDropout(drop)(layer)
             if make_functions:
                 function = Conv2D(atom_nf, ks, use_bias=False, dilation_rate=rate, activation='linear',padding='same')
@@ -677,7 +678,7 @@ def create_unet_tower(layer, num_class, batchnorm_layers=[True, True, True, True
     # MAIN U-Net layers.
     trunks = []
     for depth in range(num_downsamplings):
-        print "DS depth:", depth
+        print("DS depth:", depth)
         feats = feat[depth]
         #layer = Conv2D(feats, (1, 1), padding='same', use_bias=True)(layer)
         #layer = keras.layers.LeakyReLU(alpha=0.1)(layer)
@@ -702,7 +703,7 @@ def create_unet_tower(layer, num_class, batchnorm_layers=[True, True, True, True
         layer = MaxPooling2D(pool_size=(2, 2))(layer)
 
     for depth in reversed(range(num_downsamplings)):
-        print "US depth:", depth
+        print("US depth:", depth)
         base_layer = trunks[depth]
         feats = feat[depth]
         #layer = Conv2D(feats, (1, 1), padding='same', use_bias=True)(layer)
@@ -755,7 +756,7 @@ class AnnealedDropout(Dropout):
 
 class UNet():
     def __init__(self):
-        print ('build UNet ...')
+        print(('build UNet ...'))
 
     def get_crop_shape(self, target, refer):
         # width, the 3rd dimension
@@ -796,7 +797,7 @@ class UNet():
         return model
 
     def create_unet(self, img_shape, num_class, batchnorm_layers=[True, True, True, True, True, True, True, True, True, True], dropout_rates=[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], feat=[8,16,24,32,48,64,96], init_feats=8, num_downsamplings=4, residual=True, input_noise_amount = 0.25):
-        print "CREATING U-Net Model!!!"
+        print("CREATING U-Net Model!!!")
         concat_axis = 3
         inputs = Input(shape = img_shape)
         init_feats = 8
@@ -830,7 +831,7 @@ class UNet():
         return model
 
     def create_model(self, img_shape, num_class, batchnorm_layers=[True, True, True, True, True, True, True, True, True, True], init_feats=8, num_downsamplings=4):
-        print "CREATING U-Net Model!!!"
+        print("CREATING U-Net Model!!!")
 
         concat_axis = 3
         inputs = Input(shape = img_shape)
@@ -994,10 +995,10 @@ def build_simple_cylinder(num_classes=6, ds=4, init_feats=32, feature_growth_rat
 
     try:
         if os.path.exists(model_save_path):
-            print "Loading existing model weights..."
+            print("Loading existing model weights...")
             model.load_weights(model_save_path, by_name=True)
     except:
-        print "Could not load model weights. Initializing from scratch instead."
+        print("Could not load model weights. Initializing from scratch instead.")
     return model
 
 def build_simple_hourglass(num_classes=6, ds=4, init_feats=32, feature_growth_rate=4, ks=[(5,5),(3,3),(3,3),(3,3),(3,3)], loss='mse', lr=0.002, dropout_rate=0.0, use_transpose_conv=False, input_channels=3, model_save_path="model_checkpoint.h5", conv=Conv2D): #conv=SeparableConv2D):
@@ -1030,17 +1031,17 @@ def build_simple_hourglass(num_classes=6, ds=4, init_feats=32, feature_growth_ra
 
     try:
         if os.path.exists(model_save_path):
-            print "Loading existing model weights..."
+            print("Loading existing model weights...")
             model.load_weights(model_save_path, by_name=True)
     except:
-        print "Could not load model weights. Initializing from scratch instead."
+        print("Could not load model weights. Initializing from scratch instead.")
     return model
 
 def build_model_functional(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5'):
     model = UNet().create_model(img_shape=(None, None, input_channels), num_class=num_classes)
     #model = UNet().create_unet(img_shape=(None, None, input_channels), num_class=num_classes, init_feats=8, num_downsamplings=4)
     #model = UNet().create_linear(img_shape=(None, None, input_channels), num_class=num_classes)
-    print "Model size:", model_size(model)
+    print("Model size:", model_size(model))
 
     #model.compile(loss="categorical_crossentropy", metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.00005)) #'nadam' #'adadelta')
     #model.compile(loss=pseudo_f_measure_loss, metrics=['accuracy',sensitivity,specificity,single_class_accuracy], optimizer=keras.optimizers.Nadam(lr=0.00002)) #'nadam' #'adadelta')
@@ -1052,7 +1053,7 @@ def build_model_functional(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8
     #model.compile(loss="mse", metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.00005))#optimizer='nadam') #'adadelta')
 
     if os.path.exists(model_save_path):
-        print "Loading existing model weights..."
+        print("Loading existing model weights...")
         model.load_weights(model_save_path, by_name=True)
     return model #, flatmodel
 

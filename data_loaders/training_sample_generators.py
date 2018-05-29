@@ -1,3 +1,4 @@
+from __future__ import print_function
 import random
 import cv2
 import numpy as np
@@ -25,7 +26,7 @@ def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0
         while invalid:
             x = random.randint(0,img.shape[1]-1)
             y = random.randint(0,img.shape[0]-1)
-            #print minsize, maxsize
+            #print(minsize, maxsize)
             size = random.randint(minsize,maxsize)
             l = max(0, x-size/2)
             r = min(img.shape[1], x+size/2)
@@ -41,14 +42,14 @@ def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0
                 invalid = False
                 break
     if tries > 10:
-        print tries, maskchannel
+        print(tries, maskchannel)
 
-    #print x,y,size,img.shape
+    #print(x,y,size,img.shape)
     pad_l = max(0, size/2-x)
     pad_r = max(0, size/2-(img.shape[1]-1-x))
     pad_u = max(0, size/2-y)
     pad_b = max(0, size/2-(img.shape[0]-1-y))
-    #print l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b
+    #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(255)
     region[pad_u:pad_u+b-u,pad_l:pad_l+r-l] = img[u:b,l:r]
@@ -100,14 +101,14 @@ def get_masked_regionsampler_semanticseg(img, maskpixels, maskval=0, numclasses=
             else:
                 invalid = False
                 break
-    #print tries
+    #print(tries)
 
-    #print x,y,size,img.shape
+    #print(x,y,size,img.shape)
     pad_l = max(0, size/2-x)
     pad_r = max(0, size/2-(img.shape[1]-1-x))
     pad_u = max(0, size/2-y)
     pad_b = max(0, size/2-(img.shape[0]-1-y))
-    #print l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b
+    #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(255)
     region[pad_u:pad_u+b-u,pad_l:pad_l+r-l] = img[u:b,l:r]
@@ -158,18 +159,18 @@ def get_masked_regionsampler(img, maskpixels, maskval=0, numclasses=2, label=0, 
             else:
                 invalid = False
                 break
-    #print tries
+    #print(tries)
     size = random.randint(minsize,maxsize)
     l = max(0, x-size/2)
     r = min(img.shape[1], x+size/2)
     u = max(0, y-size/2)
     b = min(img.shape[0], y+size/2)
-    #print x,y,size,img.shape
+    #print(x,y,size,img.shape)
     pad_l = max(0, size/2-x)
     pad_r = max(0, size/2-(img.shape[1]-1-x))
     pad_u = max(0, size/2-y)
     pad_b = max(0, size/2-(img.shape[0]-1-y))
-    #print l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b
+    #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(255)
     region[pad_u:pad_u+b-u,pad_l:pad_l+r-l] = img[u:b,l:r]
@@ -186,27 +187,27 @@ def get_word_with_charsegs(page, min_segs=0):
     while invalid and tries < max_tries:
         wordnum = random.randint(0, len(page['gt_as_wordlist']))
         if len(page['bbox_charsegs']) <= wordnum or len(page['bbox_charsegs'][wordnum])+1 < len(page['gt_as_wordlist'][wordnum]) or len(page['bbox_charsegs'][wordnum]) < min_segs or len(page['gt_as_wordlist'][wordnum]) < min_segs:
-            #print tries, wordnum, len(page['bbox_charsegs'])
+            #print(tries, wordnum, len(page['bbox_charsegs']))
             if len(page['bbox_charsegs']) > wordnum:
                 pass
-                #print len(page['bbox_charsegs'][wordnum]), len(page['gt_as_wordlist'][wordnum]), min_segs
+                #print(len(page['bbox_charsegs'][wordnum]), len(page['gt_as_wordlist'][wordnum]), min_segs)
             invalid = True
             tries += 1
         else:
-            #print tries, wordnum, len(page['bbox_charsegs'])
+            #print(tries, wordnum, len(page['bbox_charsegs']))
             if len(page['bbox_charsegs']) > wordnum:
                 pass
-                #print len(page['bbox_charsegs'][wordnum]), len(page['gt_as_wordlist'][wordnum]), min_segs
+                #print(len(page['bbox_charsegs'][wordnum]), len(page['gt_as_wordlist'][wordnum]), min_segs)
             gt = page['gt_as_wordlist'][wordnum]
             invalid = False
             break
     return wordnum
 
 def scale_pad_and_center(sample, height=28, width=28, pad_value=0, do_center=True):
-    #print sample.shape
+    #print(sample.shape)
     scalefactor = min(float(height)/float(sample.shape[0]), float(width)/float(sample.shape[1]))
     sample = cv2.resize(sample, (int(sample.shape[1] * scalefactor), int(sample.shape[0] * scalefactor)))
-    #print sample.shape
+    #print(sample.shape)
     sample = pad_and_center(sample, height, width, do_center=do_center)
     return sample
 
@@ -217,7 +218,7 @@ def pad_and_center(sample, height=28, width=28, pad_value=0, mode='constant', do
     pad_b = pad_h - pad_t
     pad_l = pad_w / 2
     pad_r = pad_w - pad_l
-    #print "Min/Max", np.min(sample), np.max(sample)
+    #print("Min/Max", np.min(sample), np.max(sample))
     mean_value = np.mean(sample)
     if not do_center:
         pad_r = pad_l + pad_r
@@ -225,13 +226,13 @@ def pad_and_center(sample, height=28, width=28, pad_value=0, mode='constant', do
         pad_l = 0
         pad_t = 0
     sample = np.pad(sample, ((pad_t,pad_b), (pad_l, pad_r)), mode=mode, constant_values=mean_value) #, end_values=mean_value) # TODO: pad_value is not used
-    #print sample.shape, pad_w, pad_h
-    #print "Min/Max", np.min(sample), np.max(sample)
+    #print(sample.shape, pad_w, pad_h)
+    #print("Min/Max", np.min(sample), np.max(sample))
     #sample = np.roll(sample, pad_h/2, axis=0)
     #sample = np.roll(sample, pad_w/2, axis=1)
     #cv2.imshow('Sample Orig', sample)
     #cv2.waitKey(1000)
-    #print sample.shape
+    #print(sample.shape)
     return sample
 
 def inbox(bbox, pt):
@@ -334,7 +335,7 @@ def get_batch(self, batch_size=64, input_height=28, input_width=28):
           img = np.pad(img, (input_height,input_width), axis=1)
           gt = batch_gts[b]
           encoded_gt = string_utils.str2label_single(gt, self.char_set)
-          #print encoded_gt.shape
+          #print(encoded_gt.shape)
           np_batch_imgs[b] = img
           np_batch_gts[b] = np.pad(encoded_gt, (batch_size, maxlengt, len(self.char_set)))
       return np_batch_imgs, np_batch_gts

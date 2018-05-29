@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cv2
 
 def load_image(image_path):

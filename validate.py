@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 if not dir_path in sys.path:

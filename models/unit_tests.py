@@ -1,3 +1,4 @@
+from __future__ import print_function
 # From https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765
 def test_convnet():
   image = tf.placeholder(tf.float32, (None, 100, 100, 3))
