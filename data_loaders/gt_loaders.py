@@ -74,7 +74,7 @@ def autodiscover_suffix_to_class_map(folder, exts=["jpg", "png", "tif"]):
     return mls
 
 
-def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["jpg","png","tif"], suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
+def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["jpg","png","tif"], suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}, debuglevel=-1):
     gtdim = num_classes = len(suffix_to_class_map)
     classnums = range(0, num_classes)
     if dontcare_idx > 0:
@@ -88,7 +88,8 @@ def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["j
             if not os.path.exists(gt_layer_path):
                 gt_layer_path = image_path + "_" + class_suffix + "." + gtext
             if os.path.exists(gt_layer_path):
-                print "reading", gt_layer_path
+                if debuglevel > 2:
+                    print "reading", gt_layer_path
                 gt_layer = cv2.imread(gt_layer_path, 0).astype('float32') / 255.0
                 if gt is None:
                     gt = np.zeros((gt_layer.shape[0], gt_layer.shape[1], gtdim))
