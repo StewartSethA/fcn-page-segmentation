@@ -284,7 +284,21 @@ def densenet_for_semantic_segmentation(num_classes=6, dense_block_init_feats=8, 
     return model
 
 from regularizers import *
-def build_model_functional_old(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5', use_transpose_conv=False):
+def build_model_functional_old(args):
+    num_classes=6
+    num_feats=[[8, 16, 32, 32, 32, 32], [8,]]
+    ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]]
+    ds=[[2,2,2,-2,-2,-2],[(1,1)]]
+    combine_modes='concat'
+    output_strides=(1,1)
+    input_channels=3
+    model_save_path='model.h5'
+    use_transpose_conv=False
+    model_save_path = args.model_save_path
+    num_classes = args.num_classes
+    
+    print "Building functional model", num_classes, model_save_path
+
     model_inputs = Input(shape=(None, None, input_channels))
     current_layer = model_inputs
     tower1 = current_layer
@@ -1036,7 +1050,20 @@ def build_simple_hourglass(num_classes=6, ds=4, init_feats=32, feature_growth_ra
         print "Could not load model weights. Initializing from scratch instead."
     return model
 
-def build_model_functional(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5'):
+def build_model_functional(args):
+    num_classes=6
+    num_feats=[[8, 16, 32, 32, 32, 32], [8,]]
+    ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]]
+    ds=[[2,2,2,-2,-2,-2],[(1,1)]]
+    combine_modes='concat'
+    output_strides=(1,1)
+    input_channels=3
+    model_save_path='model.h5'
+    model_save_path = args.model_save_path
+    num_classes = args.num_classes
+    
+    print "Building functional model", num_classes, model_save_path
+    
     model = UNet().create_model(img_shape=(None, None, input_channels), num_class=num_classes)
     #model = UNet().create_unet(img_shape=(None, None, input_channels), num_class=num_classes, init_feats=8, num_downsamplings=4)
     #model = UNet().create_linear(img_shape=(None, None, input_channels), num_class=num_classes)
@@ -1058,7 +1085,11 @@ def build_model_functional(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8
 
     #num_classes += 1 # TODO: Expand blank to its own class!
 
-def build_keras_model(args):
+def build_model(args):
+    print ""
+    print ""
+    print ""
+    print "Building Keras model of type", args.model_type
     from keras.backend.tensorflow_backend import set_session
     import tensorflow as tf
     from regularizers import *
@@ -1082,5 +1113,15 @@ def build_keras_model(args):
     elif model_type == 'dilatednet':
         model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
     elif model_type == 'unet':
-    model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
+        model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
+    else:
+        import sys
+        current_module = sys.modules[__name__]
+        model = getattr(current_module, model_type)
+        model = model(args)
+    if os.path.exists(args.load_model_path):
+        print "Loading existing model weights..."
+        model.load_weights(args.load_model_path, by_name=True)
+    else:
+        print("No model by this name exists; creating new model instead...", args.load_model_path)
     return model
