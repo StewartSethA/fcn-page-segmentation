@@ -96,7 +96,7 @@ def unet(args):
 
     model = Model(input = inputs, output = conv10)
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = 'categorical_crossentropy', metrics = ['accuracy'])
+    model.compile(optimizer = Adam(lr = 1e-4), loss = args.loss, metrics = ['accuracy'])
 
     return model
 
@@ -117,7 +117,7 @@ def template_matcher_single_hidden_layer(args):
 
     predictions = y
     model = Model(inputs=model_inputs, outputs=predictions)
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.00005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=args.loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.00005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     return model
 
@@ -315,7 +315,7 @@ def densenet_tiramisu(args):
     # TODO Configure this!
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=args.loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
     return model
 
 def densenet_for_semantic_segmentation(args):
