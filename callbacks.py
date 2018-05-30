@@ -256,6 +256,12 @@ class DisplayAccuracyCallback(Callback):
         print("")
         print("========= Performing Validation... ===========")
         batch_x, batch_y = next(self.generator)
+        cropsize=256
+        try:
+            x,y = np.random.randint(0,batch_x.shape[2]-cropsize),np.random.randint(0,batch_x.shape[1]-cropsize)
+        except Exception as ex:
+            x,y = 0,0
+        batch_x, batch_y = batch_x[:,y:y+cropsize,x:x+cropsize,:],batch_y[:,y:y+cropsize,x:x+cropsize,:]
         print("Batch x, y shapes:", batch_x.shape, batch_y.shape)
         print("Making predictions...")
         preds = self.model.predict(batch_x, batch_size=batch_x.shape[0])

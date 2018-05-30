@@ -307,6 +307,8 @@ def load_gt_diskcached(image_path, num_classes=6, gt_loader=load_gt_multihot_bit
 
 # Automatically determines the GT loader to use.
 def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache=False, memory_cache=None, compress_in_ram=False, downsampling_rate=1.0, debuglevel=-1, suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}):
+    if suffix_to_class_map is None:
+        suffix_to_class_map = {"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}
     if debuglevel > 3:
         print("Loading GT for base file", image_path)
     gt_loader = load_gt_from_suffices

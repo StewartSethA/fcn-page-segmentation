@@ -103,6 +103,8 @@ class CachedMetrics(dict):
             # by concatenating them along a spatial dimension.
             self.gt = np.reshape(gt, (gt.shape[0], gt.shape[1]*gt.shape[-1], 1))
             self.pred = np.reshape(pred, (pred.shape[0], pred.shape[1]*pred.shape[-1], 1))
+        self.gt = np.clip(self.gt, 0, 1)
+        self.pred = np.clip(self.pred, 0, 1)
         if weights is None:
             self.weights = defaultdict(lambda:None)
         else:
@@ -183,6 +185,15 @@ class CachedMetrics(dict):
 
     def accuracy(self):
         return (self["true_positives"] + self["true_negatives"]) / (np.product(self.gt.shape[:-1]))
+
+    def global_true_positives(self):
+        return np.sum(self["true_positives"])
+
+    def global_true_negatives(self):
+        return np.sum(self["true_negatives"])
+
+    def global_accuracy(self):
+        return (self["global_true_positives"] + self["global_true_negatives"]) / np.product(self.gt.shape)
 
     def foreground_mass(self):
         return np.sum(self["foreground_mask"], axis=self.axes)
@@ -633,9 +644,11 @@ def trim_to_common_size(arr1, arr2):
     arr2 = arr2[:md[0],:md[1],:md[2]]
     return arr1, arr2
 
-def score_and_visualize_errors(gtfile, predfile, gtthreshold=0.5, predthreshold=0.5):
-    gt = load_gt(gtfile)
-    pred = load_gt(predfile)
+def score_and_visualize_errors(gtfile, predfile, gtthreshold=0.5, predthreshold=0.5, suffix_to_class_map=None):
+    gt = load_gt(gtfile, suffix_to_class_map=suffix_to_class_map)
+    if np.sum(gt) == 0:
+        print("WARNING: GT sum for file", gtfile, "is zero!")
+    pred = load_gt(predfile, suffix_to_class_map=suffix_to_class_map)
     gt,pred = trim_to_common_size(gt,pred)
     s = score(gt, pred, gtthreshold, predthreshold)
     visualize_errors(predfile, gt, pred, gtthreshold, predthreshold)
@@ -650,7 +663,7 @@ def visualize_confusion(outpath, confusion):
     scaled_conf = sqrt_conf / np.max(sqrt_conf, axis=0)
     cv2.imwrite(outpath+"_confusion.png", confusion*255)
 
-def score_and_visualize_folders(gt_dir, test_dir, gtthreshold=0.5, predthreshold=0.5):
+def score_and_visualize_folders(gt_dir, test_dir, gtthreshold=0.5, predthreshold=0.5, suffix_to_class_map=None):
     test_images = [os.path.join(gt_dir, f) for f in os.listdir(gt_dir) if '.jpg' == f[-4:]]
     pred_files = [f.replace(gt_dir, test_dir) for f in test_images]
     print("Test images", test_images)
@@ -660,7 +673,7 @@ def score_and_visualize_folders(gt_dir, test_dir, gtthreshold=0.5, predthreshold
     scores = defaultdict(list)
     for f,f2 in zip(test_images, pred_files):
         print("Evaluating", f, f2)
-        s = score_and_visualize_errors(f, f2, gtthreshold, predthreshold)
+        s = score_and_visualize_errors(f, f2, gtthreshold, predthreshold, suffix_to_class_map=suffix_to_class_map)
         visualize_confusion(f2, s["confusion"])
         for metric in standard_metrics:
             scores[metric].append(s[metric])
@@ -673,9 +686,17 @@ def score_and_visualize_folders(gt_dir, test_dir, gtthreshold=0.5, predthreshold
     visualize_confusion(f2, np.mean(scores["confusion"]))
     for metric in standard_metrics:
         print("Average", metric, np.mean(scores[metric]))
+    print("Pixel accuracy", None)
 
+from data_loaders.gt_loaders import autodiscover_suffix_to_class_map
 if __name__ == "__main__":
     import sys
+    test_folder = sys.argv[1]
+    if not os.path.isdir(test_folder):
+        test_folder = os.path.dirname(test_folder)
+    print("Test folder", test_folder)
+    suffix_to_class_map = autodiscover_suffix_to_class_map(test_folder, ["jpg", "png", "tif"])
+    print("Inferred suffix to class map:", suffix_to_class_map)
     if len(sys.argv) > 2:
         gtthreshold = 0.5
         predthreshold = 0.5
@@ -686,10 +707,10 @@ if __name__ == "__main__":
         if os.path.isfile(sys.argv[1]):
             f,f2 = sys.argv[1],sys.argv[2]
             print("Evaluating", f, f2)
-            score_and_visualize_errors(f, f2, gtthreshold, predthreshold)
+            score_and_visualize_errors(f, f2, gtthreshold, predthreshold, suffix_to_class_map=suffix_to_class_map)
             print("")
         else:
-            score_and_visualize_folders(sys.argv[1], sys.argv[2], gtthreshold, predthreshold)
+            score_and_visualize_folders(sys.argv[1], sys.argv[2], gtthreshold, predthreshold, suffix_to_class_map=suffix_to_class_map)
     else:
         print("Usage: python evaluations.py gt_folder pred_folder [predthreshold] [gtthreshold]")
         print("With no arguments, runs unit tests.")

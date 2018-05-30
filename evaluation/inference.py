@@ -349,7 +349,7 @@ def write_preds(queue):
 #    if pad_x != 0 or pad_y != 0:
 #        gt_mask = np.pad(gt_mask, [(0,pad_y),(0, pad_x)], mode='constant')
 # TODO: Make initial or large-template kernels zero-mean! This will help gradients go where they need to go.
-def TestModel(model_basepath=None, model=None, testfolder="./", output_folder="./", testscale=1.0, do_median=False, pixel_counts_byclass=None, multiprocess=False, verbose_level=0):
+def TestModel(model_basepath=None, model=None, testfolder="./", output_folder="./", testscale=1.0, do_median=False, pixel_counts_byclass=None, multiprocess=False, verbose_level=0, suffix_to_class_map=None):
     from data_loaders.data_loaders import WholeImageOnlyBatcher
     from data_loaders.utils import get_power_of_two_padding
     import sys

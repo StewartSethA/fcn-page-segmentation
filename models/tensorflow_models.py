@@ -135,9 +135,11 @@ class TFModelKerasStyle:
         self.profile = profile
         self.model_type = args.model_type
         self.model_constructor = model
-        if getattr(models.vanilla_cnn, self.model_type) is not None:
+        if hasattr(models.vanilla_cnn, self.model_type):
             print("Using model derived from description:", self.model_type)
             self.model_constructor = getattr(models.vanilla_cnn, self.model_type)
+        else:
+            self.model_constructor = model
         self.x, self.y_, self.y_conv, self.train_step, self.accuracy, self.keep_prob, self.loss, self.saver = create_model(self.sess, model_factory=self.model_constructor, loadmodel=self.model_path, params=self.params, trainable=True, batch_size=self.batch_size, height=self.height, width=self.width)
         if profile:
             for v in tf.trainable_variables():

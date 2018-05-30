@@ -21,6 +21,29 @@ from keras.layers import Conv2D as Conv2D_keras
 
 import os
 
+# Simplest nets first.
+
+def template_matcher_single_hidden_layer(args):
+    input_channels = 3
+    num_classes = args.num_classes
+    use_bias = False
+    kernel_size = ks = (27,27)
+    hidden_layer_size = 100
+
+
+    y = model_inputs = Input(shape=(None, None, input_channels))
+    y = Conv2D(hidden_layer_size, ks, padding='same', use_bias=use_bias)(y)
+    y = LeakyReLU(0.05)(y)
+    y = Conv2D(num_classes, (1,1), padding='same', use_bias=use_bias)(y)
+
+    predictions = y
+    model = Model(inputs=model_inputs, outputs=predictions)
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.00005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+
+    return model
+
+
+
 # Replace convolution with normalizing convolution.
 #def Conv2D(filters, kernel_size, strides=(1, 1), padding='valid', data_format=None, dilation_rate=(1, 1), activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros', kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None, kernel_constraint=None, bias_constraint=None):
 #
@@ -207,7 +230,35 @@ def dense_cnn_block(x, initial_feats=8, growth_rate=4, block_depth=3, ks=(3,3), 
 
     return layer_output
 
-def densenet_for_semantic_segmentation(num_classes=6, dense_block_init_feats=8, dense_block_growth_rate=4, updense_init_feats=8, updense_growth_rate=4, ks=(3,3), ds=5, pooling='average', block_layers=5, layers_per_block=3, bottleneck_feats=8, bottleneck_growth_rate=2, combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5', use_transpose_conv=False, dropout_rate=0.15, use_bias=False, conv=SeparableConv2D):
+import densenet.densenet_fc as dc
+
+def densenet_tiramisu(args):
+    model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=8, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    return model
+
+def densenet_for_semantic_segmentation(args):
+    num_classes=args.num_classes
+    dense_block_init_feats=8
+    dense_block_growth_rate=4
+    updense_init_feats=8
+    updense_growth_rate=4
+    ks=(3,3)
+    ds=5
+    pooling='average'
+    block_layers=5
+    layers_per_block=3
+    bottleneck_feats=8
+    bottleneck_growth_rate=2
+    combine_modes='concat'
+    output_strides=(1,1)
+    input_channels=3
+    model_save_path=args.model_save_path
+    use_transpose_conv=False
+    dropout_rate=0.15
+    use_bias=False
+    conv=SeparableConv2D
+
     model_inputs = Input(shape=(None, None, input_channels))
     y = x = model_inputs
 
@@ -297,8 +348,8 @@ def build_model_functional_old(args):
     use_transpose_conv=False
     model_save_path = args.model_save_path
     num_classes = args.num_classes
-    
-    print "Building functional model", num_classes, model_save_path
+
+    print("Building functional model", num_classes, model_save_path)
 
     model_inputs = Input(shape=(None, None, input_channels))
     current_layer = model_inputs
@@ -472,7 +523,10 @@ def build_model_functional_old(args):
     return model #, flatmodel
 
 # Full resolution image processing can accommodate at most 100 channels per original pixel. Stringent memory requirement, but it should be doable with a winning network!
-def full_res_net(num_classes=6, input_channels=3, model_save_path='model.h5'):
+def full_res_net(args):
+    num_classes=args.num_classes
+    input_channels=3
+    model_save_path=args.model_save_path
     model_inputs = Input(shape=(None, None, input_channels))
     layer = model_inputs
 
@@ -810,7 +864,17 @@ class UNet():
         model = Model(inputs=inputs, outputs=outputs)
         return model
 
-    def create_unet(self, img_shape, num_class, batchnorm_layers=[True, True, True, True, True, True, True, True, True, True], dropout_rates=[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], feat=[8,16,24,32,48,64,96], init_feats=8, num_downsamplings=4, residual=True, input_noise_amount = 0.25):
+    def create_unet(self, args):
+        num_channels = 3
+        img_shape = (None, None, num_channels)
+        num_class = args.num_classes
+        batchnorm_layers=[True, True, True, True, True, True, True, True, True, True]
+        dropout_rates=[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        feat=[8,16,24,32,48,64,96]
+        init_feats=8
+        num_downsamplings=4
+        residual=True
+        input_noise_amount = 0.25
         print("CREATING U-Net Model!!!")
         concat_axis = 3
         inputs = Input(shape = img_shape)
@@ -1015,7 +1079,20 @@ def build_simple_cylinder(num_classes=6, ds=4, init_feats=32, feature_growth_rat
         print("Could not load model weights. Initializing from scratch instead.")
     return model
 
-def build_simple_hourglass(num_classes=6, ds=4, init_feats=32, feature_growth_rate=4, ks=[(5,5),(3,3),(3,3),(3,3),(3,3)], loss='mse', lr=0.002, dropout_rate=0.0, use_transpose_conv=False, input_channels=3, model_save_path="model_checkpoint.h5", conv=Conv2D): #conv=SeparableConv2D):
+# TODO: Abstract the learning rate, and optimizer, etc. away from the model architecture!!! This will be easy and fun!
+def build_simple_hourglass(args):
+    num_classes=args.num_classes
+    ds=4
+    init_feats=32
+    feature_growth_rate=4
+    ks=[(5,5),(3,3),(3,3),(3,3),(3,3)]
+    loss='mse'
+    lr=args.lr
+    dropout_rate=0.0
+    use_transpose_conv=False
+    input_channels=3
+    model_save_path=args.model_save_path
+    conv=Conv2D #conv=SeparableConv2D
     x = inputs = Input(shape = (None, None, input_channels))
     x = Conv2D(init_feats, ks[0], activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
     x = keras.layers.LeakyReLU(alpha=0.00)(x)
@@ -1062,9 +1139,9 @@ def build_model_functional(args):
     model_save_path='model.h5'
     model_save_path = args.model_save_path
     num_classes = args.num_classes
-    
-    print "Building functional model", num_classes, model_save_path
-    
+
+    print("Building functional model", num_classes, model_save_path)
+
     model = UNet().create_model(img_shape=(None, None, input_channels), num_class=num_classes)
     #model = UNet().create_unet(img_shape=(None, None, input_channels), num_class=num_classes, init_feats=8, num_downsamplings=4)
     #model = UNet().create_linear(img_shape=(None, None, input_channels), num_class=num_classes)
@@ -1087,10 +1164,10 @@ def build_model_functional(args):
     #num_classes += 1 # TODO: Expand blank to its own class!
 
 def build_model(args):
-    print ""
-    print ""
-    print ""
-    print "Building Keras model of type", args.model_type
+    print("")
+    print("")
+    print("")
+    print("Building Keras model of type", args.model_type)
     from keras.backend.tensorflow_backend import set_session
     import tensorflow as tf
     from regularizers import *
@@ -1119,9 +1196,10 @@ def build_model(args):
         import sys
         current_module = sys.modules[__name__]
         model = getattr(current_module, model_type)
+        print("Importing model type named", model_type)
         model = model(args)
     if os.path.exists(args.load_model_path):
-        print "Loading existing model weights..."
+        print("Loading existing model weights...")
         model.load_weights(args.load_model_path, by_name=True)
     else:
         print("No model by this name exists; creating new model instead...", args.load_model_path)
