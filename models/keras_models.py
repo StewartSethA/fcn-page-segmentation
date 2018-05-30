@@ -32,67 +32,64 @@ from keras import backend as keras
 
 def unet(args):
     num_classes = args.num_classes
+    inputs = Input((None, None, 3))
+    conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
+    print("conv1 shape:",conv1.shape)
+    conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
+    print("conv1 shape:",conv1.shape)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+    print("pool1 shape:",pool1.shape)
 
-	inputs = Input((None, None, 3))
+    conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool1)
+    print("conv2 shape:",conv2.shape)
+    conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv2)
+    print("conv2 shape:",conv2.shape)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    print("pool2 shape:",pool2.shape)
 
+    conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool2)
+    print("conv3 shape:",conv3.shape)
+    conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv3)
+    print("conv3 shape:",conv3.shape)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+    print("pool3 shape:",pool3.shape)
 
-	conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
-	print "conv1 shape:",conv1.shape
-	conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
-	print "conv1 shape:",conv1.shape
-	pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-	print "pool1 shape:",pool1.shape
+    conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool3)
+    conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv4)
+    drop4 = Dropout(0.5)(conv4)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
 
-	conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool1)
-	print "conv2 shape:",conv2.shape
-	conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv2)
-	print "conv2 shape:",conv2.shape
-	pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-	print "pool2 shape:",pool2.shape
+    conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool4)
+    conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv5)
+    drop5 = Dropout(0.5)(conv5)
 
-	conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool2)
-	print "conv3 shape:",conv3.shape
-	conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv3)
-	print "conv3 shape:",conv3.shape
-	pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-	print "pool3 shape:",pool3.shape
+    up6 = Conv2D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(drop5))
+    merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 3)
+    conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge6)
+    conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv6)
 
-	conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool3)
-	conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv4)
-	drop4 = Dropout(0.5)(conv4)
-	pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
+    up7 = Conv2D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv6))
+    merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 3)
+    conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge7)
+    conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv7)
 
-	conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool4)
-	conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv5)
-	drop5 = Dropout(0.5)(conv5)
+    up8 = Conv2D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv7))
+    merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 3)
+    conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge8)
+    conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv8)
 
-	up6 = Conv2D(512, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(drop5))
-	merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 3)
-	conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge6)
-	conv6 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv6)
+    up9 = Conv2D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv8))
+    merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 3)
+    conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge9)
+    conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
+    conv9 = Conv2D(num_classes*2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
+    conv10 = Conv2D(num_classes, 1, activation = 'sigmoid')(conv9)
 
-	up7 = Conv2D(256, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv6))
-	merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 3)
-	conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge7)
-	conv7 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv7)
+    model = Model(input = inputs, output = conv10)
 
-	up8 = Conv2D(128, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv7))
-	merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 3)
-	conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge8)
-	conv8 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv8)
+    model.compile(optimizer = Adam(lr = 1e-4), loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
-	up9 = Conv2D(64, 2, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,2))(conv8))
-	merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 3)
-	conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge9)
-	conv9 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
-	conv9 = Conv2D(num_classes*2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
-	conv10 = Conv2D(num_classes, 1, activation = 'sigmoid')(conv9)
-
-	model = Model(input = inputs, output = conv10)
-
-	model.compile(optimizer = Adam(lr = 1e-4), loss = 'categorical_crossentropy', metrics = ['accuracy'])
-
-	return model
+    return model
 
 # Simplest nets first.
 
@@ -1265,8 +1262,8 @@ def build_model(args):
         #build_model_functional_old(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5', use_transpose_conv=False)
     elif model_type == 'dilatednet':
         model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
-    elif model_type == 'unet':
-        model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
+    #elif model_type == 'unet':
+    #    model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
     else:
         import sys
         current_module = sys.modules[__name__]
