@@ -1,3 +1,4 @@
+
 from __future__ import print_function
 import sys, os
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -72,7 +73,7 @@ def train(args):
     # If none is supplied, the training set will be used for real-time display, etc.
     print("Validation folder", validation_folder)
     validation_folder = sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
-    validation_generator_class = ImageAndGTBatcher(args.validation_folder, num_classes, batch_size=1, downsampling_rate=ds_rate, train=False, cache_images=True, suffix_to_class_map=suffix_to_class_map)
+    validation_generator_class = ImageAndGTBatcher(args.validation_folder, num_classes, crop_size=args.crop_size, batch_size=1, downsampling_rate=ds_rate, train=False, cache_images=True, suffix_to_class_map=suffix_to_class_map)
     validation_generator = validation_generator_class.generate()
 
     # For model benchmarking purposes, estimate the memory consumed by model instantiation.
@@ -133,8 +134,8 @@ def train(args):
         save_model_callback = TFModelSaverCallback(model, model_save_path, args.model_save_interval)
     callbacks.append(save_model_callback)
 
-    from callbacks import DisplayWeightStatsCallback
-    callbacks.append(DisplayWeightStatsCallback(model))
+    #from callbacks import DisplayWeightStatsCallback
+    #callbacks.append(DisplayWeightStatsCallback(model))
 
     from callbacks import LogTimingCallback
     callbacks.append(LogTimingCallback(batch_size))
@@ -165,7 +166,8 @@ def train(args):
     # PERFORM TRAINING!!!!
     print("Training!")
     #try:
-    model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
+    #model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
+    model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=None, validation_steps=-1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
     #except Exception as ex:
     #    print("Exception caught!")
     #    print(ex)
