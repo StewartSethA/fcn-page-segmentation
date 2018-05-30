@@ -369,7 +369,7 @@ class ImageAndGTBatcher(object):
                 image_sampler = ClassImageSampler()
             else:
                 print("Using whole image sampler")
-                image_sampler = WholeImageSampler()
+                image_sampler = UniformImageCropSampler() # For memory reasons. Used to be WholeImageSampler.
         self.image_sampler = image_sampler
         self.data_augmenter = data_augmenter
         self.num_classes = num_classes
