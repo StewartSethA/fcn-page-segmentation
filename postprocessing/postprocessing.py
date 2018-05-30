@@ -44,7 +44,7 @@ def multihot_to_multiindexed_rgb(preds):
     print("predsrgb max, min, avg:", np.max(predsrgbchannels), np.min(predsrgbchannels), np.mean(predsrgbchannels))
     return predsrgbchannels
 
-def postprocess_preds(batch_x, preds, gt=None, gt_mask=None, pixel_counts_byclass=None, thresh=0.25):
+def postprocess_preds(batch_x, preds, gt=None, gt_mask=None, pixel_counts_byclass=None, thresh=0.5):
     #return preds
 
     preds_orig = preds.copy()

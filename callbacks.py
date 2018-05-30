@@ -90,6 +90,8 @@ class DisplayTrainingSamplesCallback(Callback):
         self.batch_num = -2
         self.model = model
         self.log_dir = log_dir
+        self.pixels_per_class_per_sample = defaultdict(list)
+        self.historic_weighted_thresholds = defaultdict(list)
 
     def on_batch_end(self, batch, logs={}):
         self.batch_num += 1
@@ -110,16 +112,51 @@ class DisplayTrainingSamplesCallback(Callback):
                     plt.savefig(os.path.join(self.log_dir, "TrainImage.png"))
                 if self.model is not None:
                     im = self.training_generator.image
+                    gt = self.training_generator.gt
                     plt.figure("Training_Prediction")
                     plt.clf()
                     print("DisplayTrainingSamplesCallback input shape", im.shape)
-                    self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
+                    preds = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))
+                    self.pred = preds[0]
                     print("Pred shape:", self.pred.shape)
                     print("Pred min/max:", np.min(self.pred), np.max(self.pred))
                     plt.imshow((show(self.pred, bgr=True)), interpolation='none')
                     if self.log_dir is not None:
                         plt.savefig(os.path.join(self.log_dir, "TrainPred.png"))
-            plt.pause(0.001)
+                    plt.pause(0.001)
+
+                    # Find best per-class thresholds as well.
+                    best_fscores = defaultdict(lambda:0)
+                    best_thresholds = {}
+                    step = 0.05
+                    gt = gt.astype('float32')
+                    gt = np.reshape(gt, (1, gt.shape[0], gt.shape[1], gt.shape[2]))
+                    preds = preds.astype('float32')
+                    print("GT shape:", gt.shape, "Preds shape:", preds.shape)
+                    for thresh in np.arange(step,1.0,step):
+                        predsthresh = postprocess_preds(im, preds, gt, None, None, thresh=thresh)
+                        print("Computing TRAINING F1-scores, precisions, recalls, etc.!")
+                        cm = CachedMetrics(gt[0], predsthresh[0])
+                        precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = cm["precision"], cm["recall"], cm["accuracy"], cm["f1_score"], cm["gt_mass"], cm["true_positives"]
+                        for classnum in range(gt.shape[-1]):
+                            if f_scores[classnum] > best_fscores.get(classnum, 0):
+                                best_fscores[classnum] = f_scores[classnum]
+                                best_thresholds[classnum] = thresh
+                    # Weight by number of pixels of each...
+                    # In the last sample of 100 or so?
+                    self.best_thresholds = best_thresholds
+                    pix_counts_per_class = np.sum(gt, axis=(0,1,2))
+                    self.weighted_best_thresholds = {c:pix_counts_per_class[c]*best_thresholds[c] for c in best_thresholds.keys()}
+                    for c in best_thresholds.keys():
+                        self.pixels_per_class_per_sample[c].append(pix_counts_per_class[c])
+                        self.historic_weighted_thresholds[c].append(self.weighted_best_thresholds[c])
+                        if len(self.pixels_per_class_per_sample[c]) > 100:
+                            del self.pixels_per_class_per_sample[c][0]
+                            del self.historic_weighted_thresholds[c][0]
+                    self.historic_averaged_best_thresholds = {c:(np.mean(self.historic_weighted_thresholds[c])/np.sum(self.historic_weighted_thresholds[c])) for c in best_thresholds.keys()}
+                    print("Best historic averaged thresholds:", self.historic_averaged_best_thresholds)
+
+
 
 #if (self.iteration+1)%self.display_interval == 0:
 #ls,train_accuracy,logits = self.sess.run([self.loss, self.accuracy, self.y_conv], feed_dict={self.x:1.0-batch[0], self.y_:batch[1], self.keep_prob: 1.0})
@@ -212,6 +249,7 @@ class ShowTestPredsCallback(Callback):
         do_show = True
         #if do_show:
         #    show(batch_x[0], None, preds[0], 1024, 768, "", self.batch_num, "Test")
+
 
 class DisplayAccuracyCallback(Callback):
     def __init__(self, model, generator=None, generator_class=None, training_generator_class=None, pixel_counts_by_class=defaultdict(lambda:0), eval_interval=50, log_dir="./"):
