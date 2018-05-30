@@ -84,7 +84,7 @@ def visualize_weights(model, screen_height, screen_width, batch_num=0):
 
 import visuals
 class DisplayTrainingSamplesCallback(Callback):
-    def __init__(self, training_generator_class, model=None, interval=10, log_dir=None):
+    def __init__(self, training_generator_class, model=None, interval=10, log_dir=None, dac=None):
         self.training_generator = training_generator_class
         self.interval = interval
         self.batch_num = -2
@@ -92,6 +92,7 @@ class DisplayTrainingSamplesCallback(Callback):
         self.log_dir = log_dir
         self.pixels_per_class_per_sample = defaultdict(list)
         self.historic_weighted_thresholds = defaultdict(list)
+        self.dac = dac
 
     def on_batch_end(self, batch, logs={}):
         self.batch_num += 1
@@ -134,7 +135,7 @@ class DisplayTrainingSamplesCallback(Callback):
                     preds = preds.astype('float32')
                     print("GT shape:", gt.shape, "Preds shape:", preds.shape)
                     for thresh in np.arange(step,1.0,step):
-                        predsthresh = postprocess_preds(im, preds, gt, None, None, thresh=thresh)
+                        predsthresh = postprocess_preds(im, preds, gt, None, None, thresh=defaultdict(lambda:thresh))
                         print("Computing TRAINING F1-scores, precisions, recalls, etc.!")
                         cm = CachedMetrics(gt[0], predsthresh[0])
                         precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = cm["precision"], cm["recall"], cm["accuracy"], cm["f1_score"], cm["gt_mass"], cm["true_positives"]
@@ -155,6 +156,9 @@ class DisplayTrainingSamplesCallback(Callback):
                             del self.historic_weighted_thresholds[c][0]
                     self.historic_averaged_best_thresholds = {c:(np.mean(self.historic_weighted_thresholds[c])/np.sum(self.historic_weighted_thresholds[c])) for c in best_thresholds.keys()}
                     print("Best historic averaged thresholds:", self.historic_averaged_best_thresholds)
+                    if self.dac is not None:
+                        print("Updating Validation to use best thresholds computed on training set...")
+                        self.dac.thresholds = self.historic_averaged_best_thresholds
 
 
 
@@ -283,6 +287,7 @@ class DisplayAccuracyCallback(Callback):
         self.best_macro_fscore = 0.0
         self.log_dir = log_dir
         self.model = model
+        self.thresholds = None
 
     # on_batch_end
     def on_batch_end(self, batch, logs={}):
@@ -315,7 +320,7 @@ class DisplayAccuracyCallback(Callback):
         print("Classwise ground truth means:")
         print(np.mean(batch_y, axis=(0,1,2)))
         # return 1
-        preds = postprocess_preds(batch_x, preds, batch_y, None, self.pixel_counts_by_class)
+        preds = postprocess_preds(batch_x, preds, batch_y, None, self.pixel_counts_by_class, thresh=self.thresholds)
         print("done!")
         #scores = self.model.evaluate(batch_x, batch_y, batch_size=batch_x.shape[0])
         #print("ymax", np.max(batch_y), np.min(batch_y))
