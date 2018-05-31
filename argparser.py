@@ -1,4 +1,6 @@
+from __future__ import print_function
 import argparse
+from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Semantic Segmentation Trainer')
@@ -8,6 +10,7 @@ def parse_args():
     parser.add_argument('--framework', type=str, default="tensorflow", help="Deep learning framework to use for model and training. Options: keras, tensorflow (Default: tensorflow)")
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
     parser.add_argument('--loss', type=str, default="categorical_crossentropy", help="Loss function to use (default: categorical_crossentropy)")
+    parser.add_argument('--loss_weights', type=str, default="", help="Per-class loss weights, as comma-delimited list of floats. Example: 5,1,.5,.2,.1")
 
     # Training parameters.
     parser.add_argument('--num_classes', type=int, default=5, metavar='N', help='number of classes (default: 4)')
@@ -18,6 +21,8 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=-1, metavar='N', help='input batch size for training (default: -1; uses number of classes)')
     parser.add_argument('--crop_size', type=int, default=224, metavar='M', help='training image crop size (default 128)')
     parser.add_argument('--batcher', type=str, default="legacy", metavar='N', help='Batcher: Enables or disables augmentations. Options are simple (default) and legacy (more augmentations)')
+    parser.add_argument('--min_height_scale', type=float, default=0.25, metavar='N', help='Minimum scaling coefficient on training samples (Legacy batcher only)')
+    parser.add_argument('--max_height_scale', type=float, default=4.0, metavar='N', help='Maximum scaling coefficient on training samples (Legacy batcher only)')
 
     parser.add_argument('--epochs', type=int, default=40, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--steps_per_epoch', type=int, default=1000, metavar='N', help='number of epochs to train (default: 40)')
@@ -52,4 +57,10 @@ def parse_args():
     args = parser.parse_args()
     if args.batch_size == -1:
         args.batch_size = args.num_classes
+    if len(args.loss_weights) == 0:
+        args.loss_weights = defaultdict(lambda:1.)
+    else:
+        lw = [float(f) for f in args.loss_weights.split(",")]
+        args.loss_weights = {k:lw[k] for k in range(len(lw))}
+        print("Using loss weights:", args.loss_weights)
     return args

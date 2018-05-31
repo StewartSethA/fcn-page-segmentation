@@ -67,7 +67,7 @@ def train(args):
     elif args.batcher == 'mixed':
         training_generator = mixed_get_batch([training_generator_class.legacy_get_batch(in_width), training_generator_class.generate(in_width)], [0.1, 0.9])
     else:
-        training_generator = training_generator_class.legacy_get_batch(in_width)
+        training_generator = training_generator_class.legacy_get_batch(in_width, min_height_scale=args.min_height_scale, max_height_scale=args.max_height_scale)
 
     # Optionally include a validation set for display, early stopping, and mini-validation during training.
     # If none is supplied, the training set will be used for real-time display, etc.
