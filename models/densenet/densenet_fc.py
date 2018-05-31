@@ -442,7 +442,7 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         x = Convolution2D(nb_classes, 1, 1, activation='linear', border_mode='same', W_regularizer=l2(weight_decay),
                           bias=False)(x)
         # The cap should be a sigmoid...
-        x = Activation('relu')(x)
+        x = Activation('sigmoid')(x)
 
     return x
 
