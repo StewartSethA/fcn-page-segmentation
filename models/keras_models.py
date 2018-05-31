@@ -102,7 +102,7 @@ def unet(args):
     conv9 = Conv2D(64, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = Conv2D(num_classes*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = BatchNormalization()(conv9)
-    conv10 = Conv2D(num_classes, 1, activation = 'relu', use_bias=False)(conv9)
+    conv10 = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=False)(conv9)
 
     model = Model(input = inputs, output = conv10)
 
@@ -1273,21 +1273,22 @@ def build_model(args):
     model_type = args.model_type
     num_classes = args.num_classes
     # Build the model.
-    if model_type == 'densenet':
-        model = densenet_for_semantic_segmentation(num_classes=num_classes, dense_block_init_feats=args.initial_features_per_block,
-            dense_block_growth_rate=args.feature_growth_rate, updense_init_feats=args.upsampling_path_initial_features, updense_growth_rate=args.upsampling_path_growth_rate,
-            bottleneck_feats=args.bottleneck_feats, bottleneck_growth_rate=args.bottleneck_growth_rate,
-            block_layers=args.block_layers, layers_per_block=args.layers_per_block, model_save_path=args.load_model_path, use_transpose_conv=False, use_bias=False)
-    elif model_type == 'hourglass':
-        model = build_simple_hourglass(num_classes=num_classes, init_feats=args.initial_features_per_block, feature_growth_rate=args.feature_growth_rate, ds=args.block_layers)
-    elif model_type == 'tensmeyer':
-        print("Not implemented")
-        #build_model_functional_old(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5', use_transpose_conv=False)
-    elif model_type == 'dilatednet':
-        model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
+    #if model_type == 'densenet':
+    #    model = densenet_for_semantic_segmentation(num_classes=num_classes, dense_block_init_feats=args.initial_features_per_block,
+    #        dense_block_growth_rate=args.feature_growth_rate, updense_init_feats=args.upsampling_path_initial_features, updense_growth_rate=args.upsampling_path_growth_rate,
+    #        bottleneck_feats=args.bottleneck_feats, bottleneck_growth_rate=args.bottleneck_growth_rate,
+    #        block_layers=args.block_layers, layers_per_block=args.layers_per_block, model_save_path=args.load_model_path, use_transpose_conv=False, use_bias=False)
+    #elif model_type == 'hourglass':
+    #    model = build_simple_hourglass(num_classes=num_classes, init_feats=args.initial_features_per_block, feature_growth_rate=args.feature_growth_rate, ds=args.block_layers)
+    #elif model_type == 'tensmeyer':
+    #    print("Not implemented")
+    #    #build_model_functional_old(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5', use_transpose_conv=False)
+    #elif model_type == 'dilatednet':
+    #    model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
     #elif model_type == 'unet':
     #    model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
-    else:
+    #else:
+    if True:
         import sys
         current_module = sys.modules[__name__]
         model = getattr(current_module, model_type)

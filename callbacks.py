@@ -152,7 +152,7 @@ class DisplayTrainingSamplesCallback(Callback):
                         if pix_counts_per_class[c] > 0:
                             self.pixels_per_class_per_sample[c].append(pix_counts_per_class[c])
                             self.historic_weighted_thresholds[c].append(self.weighted_best_thresholds[c])
-                            if len(self.pixels_per_class_per_sample[c]) > 100:
+                            if len(self.pixels_per_class_per_sample[c]) > 30:
                                 del self.pixels_per_class_per_sample[c][0]
                                 del self.historic_weighted_thresholds[c][0]
                     self.historic_averaged_best_thresholds = {c:(np.mean(self.historic_weighted_thresholds.get(c, [0.5]))/np.sum(self.pixels_per_class_per_sample.get(c, [1.0,]))) for c in range(preds.shape[-1])}
