@@ -243,6 +243,60 @@ def preproc(imgs,gts,num_classes,batch_size=64,width=28,height=28, do_preproc=Tr
         gts[n] = gt
     return imgs,gts
 
+class ClassPixelQuotaSampler(DatasetSampler):
+    def __init__(self, data_folder, index=None, class_weights=None, instance_weights=None, num_classes=4, train=True):
+        self.train = train
+        if index is None:
+            class_to_samples, image_list, pixel_counts_byclass = index_training_set_by_class(training_folder, num_classes=num_classes)
+        else:
+            class_to_samples, image_list, pixel_counts_byclass = index
+        self.image_list = image_list
+        self.class_to_samples = class_to_samples
+        self.pixel_counts_byclass = pixel_counts_byclass
+        self.sum_of_classes = 0.0
+        for c in pixel_counts_byclass.keys():
+            self.sum_of_classes += pixel_counts_byclass[c]
+        self.class_weights = {c:1.0+math.log(self.sum_of_classes/pixel_counts_byclass[c]) for c in pixel_counts_byclass.keys()}
+        sorted_classweight_indices = sorted([(self.class_weights[c], c) for c in self.class_weights.keys()]) #range(len(self.class_weights))])
+        self.sorted_classweight_indices = [si[1] for si in sorted_classweight_indices]
+        self.resampled_classbalance = defaultdict(lambda:0)
+        self.resampled_imagebalance = defaultdict(lambda:defaultdict(lambda:0)) # Class to image path to frequency
+        self.class_weights = class_weights
+        if class_weights is None:
+            self.class_weights = [1.0/num_classes]*num_classes #defaultdict(lambda:1.0/num_classes) # TODO: We need a callback from the score function to modify this!
+        self.sum_class_weights = 0
+        self.sample_classbalanced_by_pixel = False # Whether to go out of our way to find pixels to match a class of interest in our training samples
+
+        # TODO: instance_weights is not currently used, but in the future,
+        # it may help to bias some proportion of each training batch
+        # in favor of difficult training samples, as is being done for classes.
+        self.instance_weights = instance_weights
+        self.num_classes = num_classes
+        self.class_indices = range(self.num_classes)
+        self.pixel_gt_counts = defaultdict(lambda:0)
+
+    def get_image_path_and_class(self, c=None, debuglevel=0):
+        minclass = 0
+        mincount = 100000000000000
+        for c in range(self.num_classes):
+            if self.pixel_gt_counts[c] < mincount:
+                mincount = self.pixel_gt_counts[c]
+                minclass = c
+        c = minclass
+        print("Sampling greedily from class with fewest pixels:", c, mincount, [int(self.pixel_gt_counts[p]) for p in sorted(self.pixel_gt_counts.keys())])
+
+        while len(self.class_to_samples[c]) == 0:
+            c = np.random.choice(self.class_to_samples.keys())
+        if len(self.class_to_samples[c]) == 1:
+            randind = 0
+        else:
+            randind = np.random.randint(0, len(self.class_to_samples[c]))
+        #print(self.class_to_samples[c])
+        image_path = self.class_to_samples[c][randind]
+        self.resampled_imagebalance[c][image_path] += 1
+
+        return image_path, c
+
 # Obtain the next sample based on sampling rules, caching, and weights.
 # This Sampler samples uniformly by class until the class weights are updated
 # (e.g. by computing performance metrics on a validation set), at which point
@@ -357,6 +411,8 @@ class ImageAndGTBatcher(object):
         data_augmenter = None #TODO Fix augmenter
         if dataset_sampler is None:
             if train:
+                print("Using ClassPixelQuotaSampler dataset sampler")
+                dataset_sampler = ClassPixelQuotaSampler(training_folder, index=index, num_classes=num_classes)
                 print("Using Performance Feedback dataset sampler")
                 dataset_sampler = PerformanceFeedbackDatasetSampler(training_folder, index=index, num_classes=num_classes)
             else:
@@ -406,6 +462,7 @@ class ImageAndGTBatcher(object):
                 image = cv2.resize(image, (0,0), fx=1.0/self.downsampling_rate, fy=1.0/self.downsampling_rate)
             image = image.astype('float32') / 255.0
             self.cached_images[image_path+'.image'] = image
+        #image = cv2.blur(image, (3,3))
         return image
 
     def mixed_get_batch(self, batch_generators, batch_generator_probabilities=None):
@@ -501,9 +558,13 @@ class ImageAndGTBatcher(object):
                 self.imb = np.zeros((batch_size, subcrop_dim, subcrop_dim, 3), dtype=np.float32)
                 self.gtb = np.zeros((batch_size, subcrop_dim, subcrop_dim, self.num_classes), dtype=np.float32)
             c = 0
+            # PYGO TODO: EVEN BETTER class sampling algorithm: Go for a quota that EQUALIZES the pixel distributions
+            # for each class within a factor of 2. This won't always be possible, but we can try...
+            # Just greedily select instances from the most under-represented class.
             if debuglevel > 1:
                 start_time = time.time()
                 #all_gt_time = time.time()
+            pixel_gt_counts = defaultdict(lambda:0)
             for b in range(batch_size):
                 if debuglevel > 1:
                     gt_elem_time = time.time()
@@ -524,6 +585,10 @@ class ImageAndGTBatcher(object):
                 # DO Data augmentation!
                 if self.data_augmenter:
                     image, gt = self.data_augmenter.augment(image, gt)
+
+                for c in range(gt.shape[-1]):
+                    pixel_gt_counts[c] += np.sum(gt[:,:,c])
+                self.dataset_sampler.pixel_gt_counts = pixel_gt_counts
 
                 # Append to the batch in a "smart" way.
                 if not self.train:

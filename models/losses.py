@@ -4,7 +4,6 @@ import keras.backend as K
 import keras
 import tensorflow as tf
 
-
 from collections import defaultdict
 
 # TODO: Alternatively to f-measure, simply minimize the variance of the diff.
@@ -23,7 +22,98 @@ from collections import defaultdict
 floattype='float32'#floattype
 nc=4
 
+# https://github.com/keras-team/keras/issues/3720
+def gaussian(x, mu, sigma):
+    return np.exp(-(float(x) - float(mu)) ** 2 / (2 * sigma ** 2))
+
+# https://github.com/keras-team/keras/issues/3720
+def make_gaussian_kernel(sigma, num_input_channels=5, num_output_channels=5):
+    global floattype
+    # Kernel radius = 2*sigma, at least 3x3
+    kernel_size = max(3, int(2*2*sigma+1))
+    mean = np.floor(0.5*kernel_size)
+    kernel_1d = np.array([gaussian(x, mean, sigma) for x in range(kernel_size)])
+    # make 2D kernel using outer product of 1D kernel, leveraging dimensional symmetry
+    np_kernel = np.outer(kernel_1d, kernel_1d).astype(dtype=K.floatx())
+    # normalize the kernel
+    kernel = np_kernel / np.sum(np_kernel)
+    # Make into Identity channel->channel map for 4D convolution
+    kernel = np.stack([kernel])
+    kernel_4d = np.zeros((kernel_size, kernel_size, num_input_channels, num_output_channels), dtype=floattype)
+    for i in range(num_input_channels):
+        kernel_4d[:,:,i,i] = kernel
+    return kernel_4d
+    # TODO: Potentially could do kernels of varying widths....
+
+# https://github.com/keras-team/keras/issues/3720
 from keras.utils.generic_utils import get_custom_objects
+def class_weighted_loss(internal_loss, weights=defaultdict(lambda:1.)):
+    # Cheap way to heighten the loss values: Scale up both predictions and gt by sqrt of weight?
+    # No, we actually need a per-class loss. (Why? Think what MSE does when logits > 1.)
+    ## Then weight the outputs of these.
+    # PYGO TODO Interface: Per-class loss functions. Then combining & weighting is trivial.
+    # The mathematics for just about every loss function I know of are amenable to this.
+    return
+
+def blurred_loss(internal_loss, blur_sigma_pred=5.0, blur_sigma_gt=5.0, num_channels=5, weights=defaultdict(lambda:1.0)):
+    print("Using Seth's Blurred loss preprocessor with weights", weights, "and internal loss function", internal_loss)
+    p_kernel = make_gaussian_kernel(blur_sigma_pred, num_channels, num_channels)
+    g_kernel = make_gaussian_kernel(blur_sigma_gt, num_channels, num_channels)
+    blur_gt_op = lambda gt: K.conv2d(gt, g_kernel, padding='same')
+    blur_pred_op = lambda gt: K.conv2d(gt, p_kernel, padding='same')
+    return lambda gt, pred: apply_preop_loss(gt, pred, internal_loss, gt_ops=[blur_gt_op,], pred_ops=[blur_pred_op,])
+
+def apply_preop_loss(gt, pred, internal_loss, gt_ops=[], pred_ops=[], weights=defaultdict(lambda:1.0)):
+    for op in gt_ops:
+        gt = op(gt)
+    for op in pred_ops:
+        pred = op(pred)
+    return internal_loss(gt, pred, weights=weights)
+
+def continuous_recall(gt, pred):
+    # Recall: Only counts where GT is true. How much of it did we get?
+    return keras.layers.multiply([gt, K.clip(pred, 0., 1.)])
+
+def continuous_precision(gt, pred):
+    # Precision: Only counts against us where GT is false. How much of false positive is there?
+    #return K.max(gt)-keras.layers.multiply([K.max(gt)-gt, 1.0-K.clip(pred, 0., 1.)])
+    return 1.0-keras.layers.multiply([1.0-gt, 1.0-K.clip(pred, 0., 1.)])
+
+def continuous_f_measure(weights=defaultdict(lambda:1.)):
+    print("Using Seth's Continuous F-Measure loss with weights", weights)
+    return lambda gt,pred:continuous_f_measure_loss(gt, pred, weights)
+
+def continuous_f_measure_loss(gt, pred, weights=defaultdict(lambda:1.)):
+    global floattype
+    gt = K.cast(gt, dtype=floattype)
+    # Simply multiply predicted pseudo-probabilities against GT to get pseudo-recall and pseudo-precision.
+    total_loss = K.variable(0.0, dtype=floattype)
+    if len(weights) == 0:
+        cr = continuous_recall(gt, pred)
+        cp = continuous_precision(gt, pred)
+        f1_score_approx = keras.layers.multiply([cr, cp])
+        return 1.0-f1_score_approx
+    global floattype
+    for c in range(len(weights)):
+        gtc = K.cast(gt[:,:,:,c], floattype)
+        pdc = pred[:,:,:,c]
+        cr = continuous_recall(gtc, pdc)
+        cp = continuous_precision(gtc, pdc)
+        f1_score_approx = keras.layers.multiply([cr, cp])
+        class_loss = weights[c] * (1.0 - f1_score_approx)
+        total_loss = total_loss + K.mean(class_loss)
+        sumweights += weights[c]
+
+    #h,w = K.shape(gt)[1], K.shape(gt)[2]
+    #total_loss = total_loss / K.cast((h*w), dtype=floattype)
+    return total_loss / sumweights
+
+def blurred_continuous_f_measure(weights=defaultdict(lambda:1.), sigma=5.0, num_classes=5):
+    return blurred_loss(continuous_f_measure_loss, weights=weights, blur_sigma_gt=sigma, blur_sigma_pred=sigma, num_channels=num_classes)
+
+get_custom_objects().update({"blurred_continuous_f_measure": blurred_continuous_f_measure})
+get_custom_objects().update({"continuous_f_measure": continuous_f_measure})
+
 def get_per_class_margin(weights=defaultdict(lambda:1.)):
     print("Using Get Per-class Margin loss")
     return lambda gt,pred: per_class_margin(gt, pred, weights=weights)
@@ -35,9 +125,10 @@ def per_class_margin(gt, pred, num_classes=nc, weights=defaultdict(lambda:1.)):
     margin_plus = 0.9
     margin_neg  = 0.1
     lmbda = 0.5
-    loss = K.variable(0.0)
+    loss = K.variable(0.0, dtype=floattype)
     for c in range(num_classes):
-        loss_piece = keras.layers.multiply([K.cast(gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], margin_plus - pred[:,:,:,c]]))]) + lmbda * keras.layers.multiply([K.cast(0.9 - gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], pred[:,:,:,c]-margin_neg]))])
+        # Added mean reduction.
+        loss_piece = K.mean(keras.layers.multiply([K.cast(gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], margin_plus - pred[:,:,:,c]]))]) + lmbda * keras.layers.multiply([K.cast(0.9 - gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], pred[:,:,:,c]-margin_neg]))]))
         loss_piece = loss_piece * weights[c]
         loss = loss + loss_piece
 

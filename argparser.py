@@ -11,6 +11,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
     parser.add_argument('--loss', type=str, default="categorical_crossentropy", help="Loss function to use (default: categorical_crossentropy)")
     parser.add_argument('--loss_weights', type=str, default="", help="Per-class loss weights, as comma-delimited list of floats. Example: 5,1,.5,.2,.1")
+    parser.add_argument('--loss_blur_sigma', type=float, default=25.0, help="Gaussian blurring radius applied to predictions and ground truth prior to loss metric computation. Helps to smooth out spatial ambiguity.")
 
     # Training parameters.
     parser.add_argument('--num_classes', type=int, default=5, metavar='N', help='number of classes (default: 4)')

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 
 
-def vis_img(img, maxh=512, maxw=512, debuglevel=0, brightness=0.65, bgr=True):
+def vis_img(img, maxh=512, maxw=512, debuglevel=0, brightness=0.33, bgr=True):
     '''
     Creates a colored image representing the C channels across
     an H x W x C heatmap of prediction or GT probabilities for

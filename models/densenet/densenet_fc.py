@@ -13,7 +13,7 @@ from keras.models import Model
 from keras.layers.core import Dropout, Activation, Reshape
 from keras.layers.convolutional import Convolution2D, Deconvolution2D, AtrousConvolution2D, UpSampling2D
 from keras.layers.pooling import AveragePooling2D
-from keras.layers import Input, merge, LeakyReLU
+from keras.layers import Input, merge, LeakyReLU, maximum, Lambda
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras.engine.topology import get_source_inputs
@@ -25,7 +25,10 @@ class LeakyRELU(LeakyReLU):
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from layers import SubPixelUpscaling
+from keras.utils.generic_utils import get_custom_objects
 
+def reluclip(x, max_value=1.0):
+    return K.relu(x, max_value=max_value)
 
 def DenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
                 reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
@@ -444,7 +447,13 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         # The cap should be a sigmoid...
         x = Activation('sigmoid')(x)
 
+        #x = Lambda(function=reluclip)(x)
+
+        #x = -maximum((-1.0, -x))
+        #x = merge([K.variable([1.0]), x], mode='minimum')
     return x
+
+get_custom_objects().update({"reluclip": reluclip})
 
 if __name__ == '__main__':
     model = DenseNetFCN((32, 32, 1), nb_dense_block=5, growth_rate=16,

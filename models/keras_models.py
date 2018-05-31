@@ -33,15 +33,22 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
 from collections import defaultdict
 
-def lookup_loss(loss, weights=defaultdict(lambda:1.)):
+def lookup_loss(loss, args):
     import sys
     current_module = sys.modules[__name__]
     if loss == "get_per_class_margin":
-        loss = get_per_class_margin(weights)
+        loss = get_per_class_margin(args.loss_weights)
+    elif loss == "blurred_continuous_f_measure":
+        loss = blurred_continuous_f_measure(args.loss_weights, args.loss_blur_sigma)
+    elif loss == "continuous_f_measure":
+        loss = continuous_f_measure(args.loss_weights)
     elif hasattr(current_module, loss):
         loss = getattr(current_module, loss)
     return loss
 
+
+def reluclip(x, max_value=1.0):
+    return K.relu(x, max_value=max_value)
 
 def unet(args):
     num_classes = args.num_classes
@@ -107,10 +114,11 @@ def unet(args):
     conv9 = Conv2D(num_classes*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = BatchNormalization()(conv9)
     conv10 = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=False)(conv9)
+    #conv10 = Lambda(function=reluclip)(conv10)
 
     model = Model(input = inputs, output = conv10)
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss, args.loss_weights), metrics = ['accuracy'])
+    model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss, args), metrics = ['accuracy'])
 
     return model
 
@@ -120,18 +128,25 @@ def template_matcher_single_hidden_layer(args):
     input_channels = 3
     num_classes = args.num_classes
     use_bias = False
-    kernel_size = ks = (27,27)
+    kernel_size = ks = (26,26)
     hidden_layer_size = 100
 
-
     y = model_inputs = Input(shape=(None, None, input_channels))
+    y = Conv2D(4, (3,3), padding='same', use_bias=use_bias)(y)
+    y = LeakyRELU(0.05)(y)
+    y = Dropout(0.5)(y)
+    y = BatchNormalization()(y)
     y = Conv2D(hidden_layer_size, ks, padding='same', use_bias=use_bias)(y)
     y = LeakyRELU(0.05)(y)
+    y = Dropout(0.5)(y)
+    y = BatchNormalization()(y)
     y = Conv2D(num_classes, (1,1), padding='same', use_bias=use_bias)(y)
+    y = Activation('sigmoid')(y)
+    #y = Lambda(function=reluclip)(y)
 
     predictions = y
     model = Model(inputs=model_inputs, outputs=predictions)
-    model.compile(loss=lookup_loss(args.loss, args.loss_weights), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss, args), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     return model
 
@@ -328,8 +343,9 @@ import densenet.densenet_fc as dc
 def densenet_tiramisu(args):
     # TODO Configure this!
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
-    model = dc.DenseNetFCN((None, None, 3), nb_dense_block=4, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
-    model.compile(loss=lookup_loss(args.loss, args.loss_weights), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=4, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
+    model = dc.DenseNetFCN((None, None, 3), nb_dense_block=1, growth_rate=8, nb_layers_per_block=2, upsampling_type='upsampling', classes=args.num_classes)
+    model.compile(loss=lookup_loss(args.loss, args), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
     return model
 
 def densenet_for_semantic_segmentation(args):
@@ -610,7 +626,7 @@ def build_model_functional_old(args):
     #model.compile(loss='mse', metrics=['accuracy'], optimizer='nadam') #'adadelta')
     #model.compile(loss=masked_mse, metrics=['accuracy'], optimizer='nadam') #'adadelta')
     #model.compile(loss=pseudo_f_measure_loss, metrics=['accuracy'], optimizer='nadam') #'adadelta')
-    model.compile(loss=lookup_loss(args.loss, args.loss_weights), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss, args), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     if os.path.exists(model_save_path):
         print("Loading existing model weights...")
@@ -1270,7 +1286,7 @@ def build_model(args):
     config = tf.ConfigProto()
     try:
         print("Setting GPU memory usage to 90%")
-        config.gpu_options.per_process_gpu_memory_fraction = 0.90
+        config.gpu_options.per_process_gpu_memory_fraction = 0.50
         set_session(tf.Session(config=config))
     except:
         print("Setting GPU memory usage to 40%")
