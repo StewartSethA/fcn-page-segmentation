@@ -1,4 +1,3 @@
-from __future__ import print_function
 import argparse
 
 def parse_args():
@@ -8,6 +7,7 @@ def parse_args():
     parser.add_argument('--test_folder', nargs="?", default="")
     parser.add_argument('--framework', type=str, default="tensorflow", help="Deep learning framework to use for model and training. Options: keras, tensorflow (Default: tensorflow)")
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
+    parser.add_argument('--loss', type=str, default="categorical_crossentropy", help="Loss function to use (default: categorical_crossentropy)")
 
     # Training parameters.
     parser.add_argument('--num_classes', type=int, default=5, metavar='N', help='number of classes (default: 4)')
@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--crop_size', type=int, default=224, metavar='M', help='training image crop size (default 128)')
     parser.add_argument('--batcher', type=str, default="legacy", metavar='N', help='Batcher: Enables or disables augmentations. Options are simple (default) and legacy (more augmentations)')
 
-    parser.add_argument('--epochs', type=int, default=50, metavar='N', help='number of epochs to train (default: 40)')
+    parser.add_argument('--epochs', type=int, default=40, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--steps_per_epoch', type=int, default=1000, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',help='learning rate (default: 0.01)')
 

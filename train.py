@@ -114,16 +114,19 @@ def train(args):
     callbacks = []
 
     from callbacks import DisplayAccuracyCallback
-    callbacks.append(DisplayAccuracyCallback(model, validation_generator, validation_generator_class, training_generator_class=training_generator_class, pixel_counts_by_class=training_generator_class.dataset_sampler.pixel_counts_byclass, eval_interval=args.log_interval, log_dir=args.log_dir))
+    dac = DisplayAccuracyCallback(model, validation_generator, validation_generator_class, training_generator_class=training_generator_class, pixel_counts_by_class=training_generator_class.dataset_sampler.pixel_counts_byclass, eval_interval=args.log_interval, log_dir=args.log_dir)
+    callbacks.append(dac)
 
     from callbacks import DisplayTrainingSamplesCallback
-    callbacks.append(DisplayTrainingSamplesCallback(training_generator_class, model=model, interval=args.training_sample_visualization_interval, log_dir=args.log_dir))
+    callbacks.append(DisplayTrainingSamplesCallback(training_generator_class, model=model, interval=args.training_sample_visualization_interval, log_dir=args.log_dir, dac=dac))
 
     if args.framework.lower() == "keras":
         if not ".h5" in model_save_path[-3:]:
             model_save_path = model_save_path + ".h5"
         from keras.callbacks import ModelCheckpoint
-        save_model_callback = ModelCheckpoint(filepath = model_save_path, verbose=1, save_best_only=True, period=1)
+        #save_model_callback = ModelCheckpoint(filepath = model_save_path, verbose=1, save_best_only=True, period=1)
+        # We don't want to cheat since our validation images are our test images, so we shouldn't allow any flow of information to the model we use for testing/validation.
+        save_model_callback = ModelCheckpoint(filepath = model_save_path, verbose=1, save_best_only=False, period=1)
 
         from keras.callbacks import ReduceLROnPlateau
         callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0.00000000001))

@@ -44,7 +44,9 @@ def multihot_to_multiindexed_rgb(preds):
     print("predsrgb max, min, avg:", np.max(predsrgbchannels), np.min(predsrgbchannels), np.mean(predsrgbchannels))
     return predsrgbchannels
 
-def postprocess_preds(batch_x, preds, gt=None, gt_mask=None, pixel_counts_byclass=None, thresh=0.25):
+def postprocess_preds(batch_x, preds, gt=None, gt_mask=None, pixel_counts_byclass=None, thresh=defaultdict(lambda:0.5)):
+    if thresh is None:
+        thresh = defaultdict(lambda:0.5)
     #return preds
 
     preds_orig = preds.copy()
@@ -64,10 +66,18 @@ def postprocess_preds(batch_x, preds, gt=None, gt_mask=None, pixel_counts_byclas
     # HisDoc modification: DON'T argmax!!!
     #argmax_preds = np.argmax(preds, axis=-1)
     preds = preds_orig
-
+    #thresh = defaultdict(lambda:0.9)
+    print("Postprocessing using thresholds:", thresh)
     # Rather than do arg-maxing, threshold the array.
-    preds[preds < thresh] = 0.0
-    preds[preds >= thresh] = 1.0
+    if type(thresh) == float:
+        preds[preds < thresh] = 0.0
+        preds[preds >= thresh] = 1.0
+    else:
+        for c in range(preds.shape[-1]):
+            pct = preds[:,:,:,c]
+            pct[pct < thresh.get(c, 0.5)] = 0.0
+            pct[pct >= thresh.get(c, 0.5)] = 1.0
+            preds[:,:,:,c] = pct
 
     ## Turning off this filtering for now.
     ##
