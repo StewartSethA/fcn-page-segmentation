@@ -102,7 +102,7 @@ def unet(args):
     conv9 = Conv2D(64, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = Conv2D(num_classes*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = BatchNormalization()(conv9)
-    conv10 = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=False)(conv9)
+    conv10 = Conv2D(num_classes, 1, activation = 'relu', use_bias=False)(conv9)
 
     model = Model(input = inputs, output = conv10)
 
@@ -597,7 +597,7 @@ def build_model_functional_old(args):
                                           activation='relu')(current_layer)
     '''
     #predictions = Conv2D(num_classes, (1,1), padding='same', activation='softmax')(current_layer)
-    predictions = Conv2D(num_classes, (1,1), padding='same', activation='sigmoid', use_bias=False)(current_layer)
+    predictions = Conv2D(num_classes, (1,1), padding='same', activation='relu', use_bias=False)(current_layer)
     model = Model(inputs=model_inputs, outputs=predictions)
 
     #model.compile(loss=f_measure_loss, metrics=['accuracy'], optimizer='nadam') #'nadam' #'adadelta')

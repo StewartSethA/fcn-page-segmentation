@@ -3,10 +3,10 @@ base=$1
 
 # NEW! Trying out different models...
 
-for model_type in unet densenet_tiramisu template_matcher_single_hidden_layer build_simple_hourglass build_model_functional; do
 for dataset in Barrett Iain Zhihan; do
     base_folder=/home/ubuntu/workspace/fcn-page-segmentation/data/
     for train_instance in A B C; do
+        for model_type in unet densenet_tiramisu template_matcher_single_hidden_layer build_simple_hourglass build_model_functional; do
           train_folder="${base_folder}/${dataset}/$train_instance"
 
           echo "Training ${train_folder}..."
