@@ -320,7 +320,7 @@ class DisplayAccuracyCallback(Callback):
         print("Classwise ground truth means:")
         print(np.mean(batch_y, axis=(0,1,2)))
         # return 1
-        preds = postprocess_preds(batch_x, preds, batch_y, None, self.pixel_counts_by_class, thresh=self.thresholds)
+        #preds = postprocess_preds(batch_x, preds, batch_y, None, self.pixel_counts_by_class, thresh=self.thresholds)
         print("done!")
         #scores = self.model.evaluate(batch_x, batch_y, batch_size=batch_x.shape[0])
         #print("ymax", np.max(batch_y), np.min(batch_y))
