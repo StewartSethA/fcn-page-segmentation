@@ -31,11 +31,14 @@ from keras.layers import Input, merge, Conv2D, MaxPooling2D, UpSampling2D, Dropo
 from keras.optimizers import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
+from collections import defaultdict
 
-def lookup_loss(loss):
+def lookup_loss(loss, weights=defaultdict(lambda:1.)):
     import sys
     current_module = sys.modules[__name__]
-    if hasattr(current_module, loss):
+    if loss == "get_per_class_margin":
+        loss = get_per_class_margin(weights)
+    elif hasattr(current_module, loss):
         loss = getattr(current_module, loss)
     return loss
 
@@ -106,7 +109,7 @@ def unet(args):
 
     model = Model(input = inputs, output = conv10)
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss), metrics = ['accuracy'])
+    model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss, args.loss_weights), metrics = ['accuracy'])
 
     return model
 
@@ -127,7 +130,7 @@ def template_matcher_single_hidden_layer(args):
 
     predictions = y
     model = Model(inputs=model_inputs, outputs=predictions)
-    model.compile(loss=lookup_loss(args.loss), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss, args.loss_weights), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     return model
 
@@ -325,7 +328,7 @@ def densenet_tiramisu(args):
     # TODO Configure this!
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     model = dc.DenseNetFCN((None, None, 3), nb_dense_block=4, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
-    model.compile(loss=lookup_loss(args.loss), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss, args.loss_weights), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
     return model
 
 def densenet_for_semantic_segmentation(args):
@@ -606,7 +609,7 @@ def build_model_functional_old(args):
     #model.compile(loss='mse', metrics=['accuracy'], optimizer='nadam') #'adadelta')
     #model.compile(loss=masked_mse, metrics=['accuracy'], optimizer='nadam') #'adadelta')
     #model.compile(loss=pseudo_f_measure_loss, metrics=['accuracy'], optimizer='nadam') #'adadelta')
-    model.compile(loss=lookup_loss(args.loss), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss, args.loss_weights), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     if os.path.exists(model_save_path):
         print("Loading existing model weights...")
