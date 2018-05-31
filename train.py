@@ -39,7 +39,9 @@ def train(args):
     model_type = args.model_type
     ds_rate = 1.0
 
-    print("")
+    for i in range(10):
+        print("")
+    print("=============================== { TRAINING } ===================================")
     print("Using framework", args.framework)
     print("Epochs:", args.epochs)
     print("Steps per epoch:", args.steps_per_epoch)
