@@ -13,13 +13,16 @@ from keras.models import Model
 from keras.layers.core import Dropout, Activation, Reshape
 from keras.layers.convolutional import Convolution2D, Deconvolution2D, AtrousConvolution2D, UpSampling2D
 from keras.layers.pooling import AveragePooling2D
-from keras.layers import Input, merge
+from keras.layers import Input, merge, LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras.engine.topology import get_source_inputs
 from keras.applications.imagenet_utils import _obtain_input_shape
 import keras.backend as K
-
+class LeakyRELU(LeakyReLU):
+    def __init__(self, *args, **kwargs):
+        self.__name__ = "LRELU"
+        super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from layers import SubPixelUpscaling
 
@@ -171,7 +174,7 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
     x = BatchNormalization(mode=0, axis=concat_axis, gamma_regularizer=l2(weight_decay),
                            beta_regularizer=l2(weight_decay))(ip)
-    x = Activation('relu')(x)
+    x = LeakyRELU(0.05)(x)
 
     if bottleneck:
         inter_channel = nb_filter * 4  # Obtained from https://github.com/liuzhuang13/DenseNet/blob/master/densenet.lua
@@ -184,7 +187,7 @@ def __conv_block(ip, nb_filter, bottleneck=False, dropout_rate=None, weight_deca
 
         x = BatchNormalization(mode=0, axis=concat_axis, gamma_regularizer=l2(weight_decay),
                                beta_regularizer=l2(weight_decay))(x)
-        x = Activation('relu')(x)
+        x = LeakyRELU(0.05)(x)
 
     x = Convolution2D(nb_filter, 3, 3, init="he_uniform", border_mode="same", bias=False,
                       W_regularizer=l2(weight_decay))(x)
@@ -210,7 +213,7 @@ def __transition_block(ip, nb_filter, compression=1.0, dropout_rate=None, weight
 
     x = BatchNormalization(mode=0, axis=concat_axis, gamma_regularizer=l2(weight_decay),
                            beta_regularizer=l2(weight_decay))(ip)
-    x = Activation('relu')(x)
+    x = LeakyRELU(0.05)(x)
     x = Convolution2D(int(nb_filter * compression), 1, 1, init="he_uniform", border_mode="same", bias=False,
                       W_regularizer=l2(weight_decay))(x)
     if dropout_rate:
@@ -438,7 +441,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
     else: # Convolutional top instead of fully-connected.
         x = Convolution2D(nb_classes, 1, 1, activation='linear', border_mode='same', W_regularizer=l2(weight_decay),
                           bias=False)(x)
-        x = Activation(activation)(x)
+        # The cap should be a sigmoid...
+        x = Activation('sigmoid')(x)
 
     return x
 
