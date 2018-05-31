@@ -18,8 +18,10 @@ from losses import *
 from metrics import *
 from keras.backend import spatial_2d_padding as pad2d
 from keras.layers import Conv2D as Conv2D_keras
-
-import os
+class LeakyRELU(LeakyReLU):
+    def __init__(self, *args, **kwargs):
+        self.__name__ = "LRELU"
+        super(LeakyRELU, self).__init__(*args, **kwargs)
 
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -30,73 +32,81 @@ from keras.optimizers import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
 
+def lookup_loss(loss):
+    import sys
+    current_module = sys.modules[__name__]
+    if hasattr(current_module, loss):
+        loss = getattr(current_module, loss)
+    return loss
+
+
 def unet(args):
     num_classes = args.num_classes
     inputs = Input((None, None, 3))
-    conv1 = Conv2D(64, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(inputs)
+    conv1 = Conv2D(64, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(inputs)
     print("conv1 shape:",conv1.shape)
-    conv1 = Conv2D(64, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv1)
+    conv1 = Conv2D(64, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv1)
     print("conv1 shape:",conv1.shape)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
     pool1 = BatchNormalization()(pool1)
     print("pool1 shape:",pool1.shape)
 
-    conv2 = Conv2D(128, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool1)
+    conv2 = Conv2D(128, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool1)
     print("conv2 shape:",conv2.shape)
-    conv2 = Conv2D(128, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv2)
+    conv2 = Conv2D(128, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv2)
     print("conv2 shape:",conv2.shape)
     pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
     pool2 = BatchNormalization()(pool2)
     print("pool2 shape:",pool2.shape)
 
-    conv3 = Conv2D(256, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool2)
+    conv3 = Conv2D(256, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool2)
     print("conv3 shape:",conv3.shape)
-    conv3 = Conv2D(256, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv3)
+    conv3 = Conv2D(256, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv3)
     print("conv3 shape:",conv3.shape)
     pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
     pool3 = BatchNormalization()(pool3)
     print("pool3 shape:",pool3.shape)
 
-    conv4 = Conv2D(512, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool3)
-    conv4 = Conv2D(512, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv4)
+    conv4 = Conv2D(512, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool3)
+    conv4 = Conv2D(512, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv4)
     drop4 = Dropout(0.5)(conv4)
     pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
     pool4 = BatchNormalization()(pool4)
 
-    conv5 = Conv2D(1024, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool4)
-    conv5 = Conv2D(1024, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv5)
+    conv5 = Conv2D(1024, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool4)
+    conv5 = Conv2D(1024, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv5)
     drop5 = Dropout(0.5)(conv5)
     drop5 = BatchNormalization()(drop5)
 
-    up6 = Conv2D(512, 2, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(drop5))
+    up6 = Conv2D(512, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(drop5))
     merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 3)
-    conv6 = Conv2D(512, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge6)
-    conv6 = Conv2D(512, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv6)
+    conv6 = Conv2D(512, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge6)
+    conv6 = Conv2D(512, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv6)
     conv6 = BatchNormalization()(conv6)
 
-    up7 = Conv2D(256, 2, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv6))
+    up7 = Conv2D(256, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv6))
     merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 3)
-    conv7 = Conv2D(256, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge7)
-    conv7 = Conv2D(256, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv7)
+    conv7 = Conv2D(256, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge7)
+    conv7 = Conv2D(256, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv7)
     conv7 = BatchNormalization()(conv7)
 
-    up8 = Conv2D(128, 2, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv7))
+    up8 = Conv2D(128, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv7))
     merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 3)
-    conv8 = Conv2D(128, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge8)
-    conv8 = Conv2D(128, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv8)
+    conv8 = Conv2D(128, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge8)
+    conv8 = Conv2D(128, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv8)
     conv8 = BatchNormalization()(conv8)
 
-    up9 = Conv2D(64, 2, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv8))
+    up9 = Conv2D(64, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv8))
     merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 3)
-    conv9 = Conv2D(64, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge9)
-    conv9 = Conv2D(64, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
-    conv9 = Conv2D(num_classes*2, 3, activation = LeakyReLU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
+    conv9 = Conv2D(64, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge9)
+    conv9 = Conv2D(64, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
+    conv9 = Conv2D(num_classes*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = BatchNormalization()(conv9)
     conv10 = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=False)(conv9)
 
     model = Model(input = inputs, output = conv10)
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = args.loss, metrics = ['accuracy'])
+    model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss), metrics = ['accuracy'])
 
     return model
 
@@ -112,12 +122,12 @@ def template_matcher_single_hidden_layer(args):
 
     y = model_inputs = Input(shape=(None, None, input_channels))
     y = Conv2D(hidden_layer_size, ks, padding='same', use_bias=use_bias)(y)
-    y = LeakyReLU(0.05)(y)
+    y = LeakyRELU(0.05)(y)
     y = Conv2D(num_classes, (1,1), padding='same', use_bias=use_bias)(y)
 
     predictions = y
     model = Model(inputs=model_inputs, outputs=predictions)
-    model.compile(loss=args.loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.00005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     return model
 
@@ -157,7 +167,7 @@ def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, 
                 function = functions[head_num][d_e+1]
             layer = function(layer)
             #layer = BatchNormalization()(layer)
-            layer = LeakyReLU(alpha=0.01)(layer)
+            layer = LeakyRELU(alpha=0.01)(layer)
 
         if residual:
             layer = keras.layers.Add()([start_layer, layer])
@@ -279,7 +289,7 @@ def build_dilated_net_layers(layer, num_classes=6, num_input_channels=3, depth=5
             attention_mask = Conv2D(atom_nf*heads*len(rates), attention_size, activation='relu', dilation_rate=(11,11), padding='same', use_bias=True, bias_initializer='ones')(layer)
             masked_layer = multiply([attention_mask, layer])
             layer = masked_layer
-            layer = LeakyReLU(alpha=0.01)(layer)
+            layer = LeakyRELU(alpha=0.01)(layer)
 
         layer = BatchNormalization()(layer)
         layer = GaussianDropout(0.1)(layer)
@@ -288,7 +298,7 @@ def build_dilated_net_layers(layer, num_classes=6, num_input_channels=3, depth=5
 def dense_cnn_block(x, initial_feats=8, growth_rate=4, block_depth=3, ks=(3,3), use_bias=False, dropout_rate=0.5, conv=SeparableConv2D):
     y = x
     y = BatchNormalization()(y)
-    y = LeakyReLU(alpha=0.01)(y)
+    y = LeakyRELU(alpha=0.01)(y)
     layers_of_inputs = [y,] #[[y,],]
 
     num_outputs = initial_feats
@@ -315,7 +325,7 @@ def densenet_tiramisu(args):
     # TODO Configure this!
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
-    model.compile(loss=args.loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
     return model
 
 def densenet_for_semantic_segmentation(args):
@@ -346,10 +356,10 @@ def densenet_for_semantic_segmentation(args):
     y = Conv2D(32, (9,9), padding='same', use_bias=use_bias)(y)
     #y = Dropout(dropout_rate)(y)
     y = BatchNormalization()(y)
-    y = LeakyReLU(alpha=0.01)(y)
+    y = LeakyRELU(alpha=0.01)(y)
     y = conv(8, (1,1), padding='same', use_bias=use_bias)(y)
     y = Dropout(dropout_rate)(y)
-    y = LeakyReLU(alpha=0.01)(y)
+    y = LeakyRELU(alpha=0.01)(y)
     fullscale_outputs = []
     scaled_outputs = []
     scale_down = 1
@@ -368,7 +378,7 @@ def densenet_for_semantic_segmentation(args):
         elif pooling == "max":
             y = MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same')(y)
         y = BatchNormalization()(y)
-        y = LeakyReLU(alpha=0.01)(y)
+        y = LeakyRELU(alpha=0.01)(y)
         y_bottleneck = conv(bottleneck_feats, ks_bottleneck, padding='same', strides=strides, use_bias=use_bias)(y)
         bottleneck_feats += bottleneck_growth_rate
         y = y_bottleneck
@@ -385,7 +395,7 @@ def densenet_for_semantic_segmentation(args):
                 upsampled = UpSampling2D(size=(2,2), data_format=None)(y)
                 upsampled = conv(bottleneck_feats, (3,3), padding='same', use_bias=True, dilation_rate=(2,2))(upsampled)
             upsampled = BatchNormalization()(upsampled)
-            upsampled = LeakyReLU(alpha=0.01)(upsampled)
+            upsampled = LeakyRELU(alpha=0.01)(upsampled)
             upsampled = Dropout(0.05)(upsampled)
         else:
             upsampled = y
@@ -396,7 +406,7 @@ def densenet_for_semantic_segmentation(args):
         y = dense_cnn_block(y, initial_feats=updense_init_feats, growth_rate=updense_growth_rate, block_depth=layers_per_block, ks=ks, use_bias=use_bias)
         # Bottleneck
         y = BatchNormalization()(y)
-        y = LeakyReLU(alpha=0.01)(y)
+        y = LeakyRELU(alpha=0.01)(y)
         y_bottleneck = conv(bottleneck_feats, ks_bottleneck, padding='same', strides=(1,1), use_bias=use_bias)(y)
         bottleneck_feats -= bottleneck_growth_rate
         y = y_bottleneck
@@ -404,7 +414,7 @@ def densenet_for_semantic_segmentation(args):
     y = UpSampling2D(size=(2,2), data_format=None)(y)
     y = conv(bottleneck_feats, (3,3), padding='same', use_bias=False)(y)
     y = BatchNormalization()(y)
-    y = LeakyReLU(alpha=0.01)(y)
+    y = LeakyRELU(alpha=0.01)(y)
 
     predictions = conv(num_classes, (1,1), padding='same', activation='sigmoid', use_bias=False)(y)
     #predictions = keras.layers.Lambda(lambda x: K.cast(x, dtype='float32'))(y)
@@ -455,7 +465,7 @@ def build_model_functional_old(args):
         ks = branch_convs[branch_num]
         branch_trunk = Conv2D(nf, ks, padding='same', use_bias=False)(previous_trunk)
         branch_trunk = BatchNormalization()(branch_trunk)
-        branch_trunk = LeakyReLU(alpha=0.01)(branch_trunk)
+        branch_trunk = LeakyRELU(alpha=0.01)(branch_trunk)
         branch_trunk = Dropout(0.05)(branch_trunk)
         branch_trunks.append(branch_trunk)
         if branch_num != branches - 1:
@@ -474,7 +484,7 @@ def build_model_functional_old(args):
             current_layer = Conv2D(nf, ks, padding='same', use_bias=False)(current_layer)
             current_layer = BatchNormalization()(current_layer)
             #current_layer = MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same')(current_layer)
-            current_layer = LeakyReLU(alpha=0.01)(current_layer)
+            current_layer = LeakyRELU(alpha=0.01)(current_layer)
             current_layer = Dropout(0.05)(current_layer)
         # Now create (learned?) upsampling layers to improve each branch!
         if branch_num > 0:
@@ -486,12 +496,12 @@ def build_model_functional_old(args):
                     #current_layer = Conv2D(nf, (5,5), padding='same', use_bias=True, kernel_regularizer=keras.regularizers.l2(0.01))(current_layer)
                     current_layer = Conv2D(nf, (3,3), padding='same', use_bias=True, dilation_rate=(2,2), kernel_regularizer=keras.regularizers.l2(0.01))(current_layer)
                 current_layer = BatchNormalization()(current_layer)
-                current_layer = LeakyReLU(alpha=0.0001)(current_layer)
+                current_layer = LeakyRELU(alpha=0.0001)(current_layer)
                 current_layer = Dropout(0.15)(current_layer)
         # DO dimensionality reduction for each branch before passing on to concatenation.
         current_layer = Conv2D(num_classes, (1, 1), padding='same', kernel_regularizer=keras.regularizers.l2(0.01))(current_layer)
         current_layer = BatchNormalization()(current_layer)
-        current_layer = LeakyReLU(alpha=0.0001)(current_layer)
+        current_layer = LeakyRELU(alpha=0.0001)(current_layer)
         #current_layer = Dropout(0.25)(current_layer)
         branch_outputs.append(current_layer)
 
@@ -505,7 +515,7 @@ def build_model_functional_old(args):
     # max_selected_branches = merge(branch_outputs, mode='max', concat_axis=1)
     dimreduct_branches = Conv2D(crown_dims, (1,1), padding='same')(concatted_branches)
     dimreduct_branches = BatchNormalization()(dimreduct_branches)
-    dimreduct_branches = LeakyReLU(alpha=0.0001)(dimreduct_branches)
+    dimreduct_branches = LeakyRELU(alpha=0.0001)(dimreduct_branches)
     #dimreduct_branches = Dropout(0.5)(dimreduct_branches)
 
     #local_attention = Conv2D(crown_dims, (1,1), padding='same', kernel_regularizer=zeromean_regularizer)(dimreduct_branches)
@@ -519,7 +529,7 @@ def build_model_functional_old(args):
     top_concatenation = dimreduct_branches
     final_conv = Conv2D(crown_dims, (1,1), padding='same')(top_concatenation)
     final_conv = BatchNormalization()(final_conv)
-    final_conv = LeakyReLU(alpha=0.1)(final_conv)
+    final_conv = LeakyRELU(alpha=0.1)(final_conv)
     current_layer = final_conv
     #current_layer = Dropout(0.15)(current_layer)
 
@@ -558,18 +568,18 @@ def build_model_functional_old(args):
             current_layer = first_layer
         current_layer = BatchNormalization()(current_layer)
         #current_layer = MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same')(current_layer)
-        current_layer = LeakyReLU(alpha=0.1)(current_layer)
+        current_layer = LeakyRELU(alpha=0.1)(current_layer)
         current_layer = Dropout(0.05)(current_layer)
     #a_layer = Conv2D(nf, (1,9), strides=(1,1), padding='same', use_bias=False)(current_layer)
     #a_layer = Conv2D(nf, (9,1), strides=(1,1), padding='same', use_bias=False)(current_layer)
-    #a_layer = LeakyReLU(alpha=0.1)(a_layer)
+    #a_layer = LeakyRELU(alpha=0.1)(a_layer)
     # TODO: Multiply WEIGHTS, not post-weight activations!!!
     '''
 
     # LEARN weights (activation arrays) to apply to KERNELS!!
     #b_layer = SeparableConv2D(nf, (1,1), strides=(1,1), padding='same', use_bias=False)(current_layer)
     #current_layer = merge([a_layer, b_layer], mode='max', concat_axis=1) #multiply([a_layer, b_layer])
-    #current_layer = LeakyReLU(alpha=0.1)(current_layer)
+    #current_layer = LeakyRELU(alpha=0.1)(current_layer)
 
     #current_layer = merge([current_layer, tower1], mode='max', concat_axis=1) #multiply([a_layer, b_layer])
 
@@ -596,7 +606,7 @@ def build_model_functional_old(args):
     #model.compile(loss='mse', metrics=['accuracy'], optimizer='nadam') #'adadelta')
     #model.compile(loss=masked_mse, metrics=['accuracy'], optimizer='nadam') #'adadelta')
     #model.compile(loss=pseudo_f_measure_loss, metrics=['accuracy'], optimizer='nadam') #'adadelta')
-    model.compile(loss=per_class_margin, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
+    model.compile(loss=lookup_loss(args.loss), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.0005, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
 
     if os.path.exists(model_save_path):
         print("Loading existing model weights...")
@@ -613,36 +623,36 @@ def full_res_net(args):
 
     # 3,796,763,136 (4 GB) consumed with a single image in memory, at 100 channels per pixel.
     simple_edges = Conv2D(8, (3,3), padding='same', use_bias=False, kernel_initializer=keras.initializers.Orthogonal())(layer)
-    simple_edges = LeakyReLU(alpha=0.1)(simple_edges)
+    simple_edges = Activation(LeakyRELU(alpha=0.1))(simple_edges)
     simple_colors = Conv2D(8, (1,1), padding='same', use_bias=True)(layer)
-    simple_colors = LeakyReLU(alpha=0.1)(simple_colors)
+    simple_colors = Activation(LeakyRELU(alpha=0.1))(simple_colors)
     first_layer = concatenate([simple_edges, simple_colors])
 
     second_layer = MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same')(first_layer)
     second_edges = Conv2D(16, (3,3), padding='same', use_bias=False, kernel_initializer=keras.initializers.Orthogonal())(second_layer)
-    second_edges = LeakyReLU(alpha=0.05)(second_edges)
+    second_edges = LeakyRELU(alpha=0.05)(second_edges)
     second_colors = Conv2D(8, (1,1), padding='same', use_bias=True)(second_layer)
-    second_colors = LeakyReLU(alpha=0.05)(second_colors)
+    second_colors = LeakyRELU(alpha=0.05)(second_colors)
     second_layer = concatenate([second_edges, second_colors])
     second_layer = Dropout(0.05)(second_layer)
 
     third_layer = MaxPooling2D(pool_size=(2,2), strides = (2,2), padding='same')(second_layer)
     third_edges = Conv2D(32, (3,3), padding='same', use_bias=False)(third_layer)
     third_edges = BatchNormalization()(third_edges)
-    third_edges = LeakyReLU(alpha=0.05)(third_edges)
+    third_edges = LeakyRELU(alpha=0.05)(third_edges)
     third_colors = Conv2D(16, (1,1), padding='same', use_bias=False)(third_layer)
     third_colors = BatchNormalization()(third_colors)
-    third_colors = LeakyReLU(alpha=0.05)(third_colors)
+    third_colors = LeakyRELU(alpha=0.05)(third_colors)
     third_layer = concatenate([third_edges, third_colors])
     third_layer = Dropout(0.1)(third_layer)
 
     fourth_layer = MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same')(third_layer)
     fourth_structures = Conv2D(24, (5,5), padding='same', use_bias=False)(fourth_layer)
-    fourth_structures = LeakyReLU(alpha=0.1)(fourth_structures)
+    fourth_structures = LeakyRELU(alpha=0.1)(fourth_structures)
     fourth_edges = Conv2D(16, (3,3), padding='same', use_bias=False)(fourth_layer)
-    fourth_edges = LeakyReLU(alpha=0.05)(fourth_edges)
+    fourth_edges = LeakyRELU(alpha=0.05)(fourth_edges)
     fourth_colors = Conv2D(16, (1,1), padding='same', use_bias=False)(fourth_layer)
-    fourth_colors = LeakyReLU(alpha=0.05)(fourth_colors)
+    fourth_colors = LeakyRELU(alpha=0.05)(fourth_colors)
     fourth_layer = concatenate([fourth_structures, fourth_edges, fourth_colors])
     fourth_layer = Dropout(0.12)(fourth_layer)
 
@@ -650,26 +660,26 @@ def full_res_net(args):
     fifth_layer1 = Conv2D(24, (1,1), padding='same', use_bias=True)(fifth_layer)
     fifth_structures = Conv2D(24, (5,5), padding='same', use_bias=False)(fifth_layer1)
     fifth_structures = BatchNormalization()(fifth_structures)
-    fifth_structures = LeakyReLU(alpha=0.1)(fifth_structures)
+    fifth_structures = LeakyRELU(alpha=0.1)(fifth_structures)
     fifth_layer2 = Conv2D(16, (1,1), padding='same', use_bias=True)(fifth_layer)
     fifth_edges = Conv2D(8, (3,3), padding='same', use_bias=False)(fifth_layer2)
     fifth_edges = BatchNormalization()(fifth_edges)
-    fifth_edges = LeakyReLU(alpha=0.05)(fifth_edges)
+    fifth_edges = LeakyRELU(alpha=0.05)(fifth_edges)
     fifth_colors = Conv2D(16, (1,1), padding='same', use_bias=False)(fifth_layer2)
     fifth_colors = BatchNormalization()(fifth_colors)
-    fifth_colors = LeakyReLU(alpha=0.05)(fifth_colors)
+    fifth_colors = LeakyRELU(alpha=0.05)(fifth_colors)
     fifth_layer = concatenate([fifth_structures, fifth_edges, fifth_colors])
     fifth_layer = Dropout(0.15)(fifth_layer)
 
     sixth_layer = MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same')(fifth_layer)
     sixth_layer1 = Conv2D(24, (1,1), padding='same', use_bias=True)(sixth_layer)
     sixth_structures = Conv2D(24, (5,5), padding='same', use_bias=False)(sixth_layer1)
-    sixth_structures = LeakyReLU(alpha=0.1)(sixth_structures)
+    sixth_structures = LeakyRELU(alpha=0.1)(sixth_structures)
     sixth_layer2 = Conv2D(16, (1,1), padding='same', use_bias=True)(sixth_layer)
     sixth_edges = Conv2D(8, (3,3), padding='same', use_bias=False)(sixth_layer2)
-    sixth_edges = LeakyReLU(alpha=0.05)(sixth_edges)
+    sixth_edges = LeakyRELU(alpha=0.05)(sixth_edges)
     sixth_colors = Conv2D(8, (1,1), padding='same', use_bias=False)(sixth_layer2)
-    sixth_colors = LeakyReLU(alpha=0.05)(sixth_colors)
+    sixth_colors = LeakyRELU(alpha=0.05)(sixth_colors)
     sixth_layer = concatenate([sixth_structures, sixth_edges, sixth_colors])
     sixth_layer = Dropout(0.2)(sixth_layer)
 
@@ -678,19 +688,19 @@ def full_res_net(args):
     seventh_layer1 = Conv2D(24, (1,1), padding='same', use_bias=True)(seventh_layer)
     seventh_structures = Conv2D(24, (5,5), padding='same', use_bias=False)(seventh_layer1)
     seventh_structures = BatchNormalization()(seventh_structures)
-    seventh_structures = LeakyReLU(alpha=0.1)(seventh_structures)
+    seventh_structures = LeakyRELU(alpha=0.1)(seventh_structures)
     seventh_layer2 = Conv2D(16, (1,1), padding='same', use_bias=True)(seventh_layer)
     seventh_edges = Conv2D(8, (3,3), padding='same', use_bias=False)(seventh_layer2)
     seventh_edges = BatchNormalization()(seventh_edges)
-    seventh_edges = LeakyReLU(alpha=0.05)(seventh_edges)
+    seventh_edges = LeakyRELU(alpha=0.05)(seventh_edges)
     seventh_colors = Conv2D(8, (1,1), padding='same', use_bias=False)(seventh_layer2)
     seventh_colors = BatchNormalization()(seventh_colors)
-    seventh_colors = LeakyReLU(alpha=0.05)(seventh_colors)
+    seventh_colors = LeakyRELU(alpha=0.05)(seventh_colors)
     seventh_layer = concatenate([seventh_structures, seventh_edges, seventh_colors])
     seventh_layer = Dropout(0.25)(seventh_layer)
 
     hole_filling_layer = SeparableConv2D(32, (5,5), padding='same', use_bias=True)(fifth_layer)
-    hole_filling_layer = LeakyReLU(alpha=0.05)(hole_filling_layer)
+    hole_filling_layer = LeakyRELU(alpha=0.05)(hole_filling_layer)
     hole_filling_attention = Conv2D(32, (1,1), padding='same', activation='sigmoid', use_bias=True, bias_initializer='ones')(fifth_layer)
     hole_filling_product = multiply([hole_filling_layer, hole_filling_attention])
     #seventh_layer = hole_filling_product
@@ -698,13 +708,13 @@ def full_res_net(args):
     maxout_input = Conv2D(32, (1,1), padding='same', use_bias=True)(fifth_layer)
 
     maxout_features1 = SeparableConv2D(32, (5,5), dilation_rate=(1,1), padding='same', use_bias=True)(maxout_input)
-    maxout_features1 = LeakyReLU(alpha=0.5)(maxout_features1)
+    maxout_features1 = LeakyRELU(alpha=0.5)(maxout_features1)
     maxout_features2 = SeparableConv2D(32, (5,5), dilation_rate=(1,1), padding='same', use_bias=True)(maxout_input)
-    maxout_features2 = LeakyReLU(alpha=0.5)(maxout_features2)
+    maxout_features2 = LeakyRELU(alpha=0.5)(maxout_features2)
     #maxout_features3 = SeparableConv2D(32, (5,5), dilation_rate=(1,1), padding='same', use_bias=True)(maxout_input)
-    #maxout_features3 = LeakyReLU(alpha=0.5)(maxout_features3)
+    #maxout_features3 = LeakyRELU(alpha=0.5)(maxout_features3)
     #maxout_features4 = SeparableConv2D(32, (5,5), dilation_rate=(1,1), padding='same', use_bias=True)(maxout_input)
-    #maxout_features4 = LeakyReLU(alpha=0.5)(maxout_features4)
+    #maxout_features4 = LeakyRELU(alpha=0.5)(maxout_features4)
 
     maxout_features = maximum([maxout_features1, maxout_features2]) #merge(, mode='max', concat_axis=1) #, maxout_features3, maxout_features4], mode='max', concat_axis = 1)
 
@@ -718,35 +728,35 @@ def full_res_net(args):
     upsampled_sixth = concatenate([upsampled_sixth, sixth_layer])
     upsampled_sixth = Conv2D(256, (3,3), padding='same', use_bias=True)(upsampled_sixth)
     upsampled_sixth = BatchNormalization()(upsampled_sixth)
-    upsampled_sixth = LeakyReLU(alpha=0.05)(upsampled_sixth)
+    upsampled_sixth = LeakyRELU(alpha=0.05)(upsampled_sixth)
 
     upsampled_fifth = UpSampling2D(size=(2,2), data_format=None)(upsampled_sixth)
     upsampled_fifth = concatenate([upsampled_fifth, fifth_layer])
     upsampled_fifth = Conv2D(128, (5,5), padding='same', use_bias=True)(upsampled_fifth)
     upsampled_fifth = BatchNormalization()(upsampled_fifth)
-    upsampled_fifth = LeakyReLU(alpha=0.05)(upsampled_fifth)
+    upsampled_fifth = LeakyRELU(alpha=0.05)(upsampled_fifth)
 
     upsampled_fourth = UpSampling2D(size=(2,2), data_format=None)(upsampled_fifth)
     upsampled_fourth = concatenate([upsampled_fourth, fourth_layer])
     upsampled_fourth = Conv2D(64, (3,3), padding='same', use_bias=True)(upsampled_fourth)
-    upsampled_fourth = LeakyReLU(alpha=0.05)(upsampled_fourth)
+    upsampled_fourth = LeakyRELU(alpha=0.05)(upsampled_fourth)
 
     upsampled_third = UpSampling2D(size=(2,2), data_format=None)(upsampled_fourth)
     upsampled_third = concatenate([upsampled_third, third_layer])
     upsampled_third = Conv2D(32, (3,3), padding='same', use_bias=True)(upsampled_third)
     upsampled_third = BatchNormalization()(upsampled_third)
-    upsampled_third = LeakyReLU(alpha=0.05)(upsampled_third)
+    upsampled_third = LeakyRELU(alpha=0.05)(upsampled_third)
 
     upsampled_second = UpSampling2D(size=(2,2), data_format=None)(upsampled_third)
     upsampled_second = concatenate([upsampled_second, second_layer])
     upsampled_second = Conv2D(24, (5,5), padding='same', use_bias=True)(upsampled_second)
-    upsampled_second = LeakyReLU(alpha=0.05)(upsampled_second)
+    upsampled_second = LeakyRELU(alpha=0.05)(upsampled_second)
 
     upsampled_first = UpSampling2D(size=(2,2), data_format=None)(upsampled_second)
     upsampled_first = concatenate([upsampled_first, first_layer])
     upsampled_first = Conv2D(16, (5,5), padding='same', use_bias=True)(upsampled_first)
     upsampled_first = BatchNormalization()(upsampled_first)
-    upsampled_first = LeakyReLU(alpha=0.05)(upsampled_first)
+    upsampled_first = LeakyRELU(alpha=0.05)(upsampled_first)
 
     current_layer = upsampled_first
 
@@ -777,7 +787,7 @@ from keras.models import Model
 from keras.layers import Input, merge, concatenate, MaxPooling2D, UpSampling2D, Cropping2D, ZeroPadding2D
 from keras.layers.convolutional import Conv2D
 from keras.layers.merge import concatenate
-from keras.layers import merge, Activation, Dropout, LeakyReLU
+from keras.layers import merge, Activation, Dropout
 from keras.layers import BatchNormalization
 import tensorflow as tf
 import keras
@@ -813,7 +823,7 @@ def make_multihead(layer, heads=16, nf=32, atom_nf=2, ks=(3,3), d=1, drop=0.10, 
                 function = functions[head_num][d_e+1]
             layer = function(layer)
             #layer = BatchNormalization()(layer)
-            layer = LeakyReLU(alpha=0.01)(layer)
+            layer = LeakyRELU(alpha=0.01)(layer)
 
         if residual:
             layer = keras.layers.Add()([start_layer, layer])
@@ -830,9 +840,9 @@ def create_unet_tower(layer, num_class, batchnorm_layers=[True, True, True, True
         print("DS depth:", depth)
         feats = feat[depth]
         #layer = Conv2D(feats, (1, 1), padding='same', use_bias=True)(layer)
-        #layer = keras.layers.LeakyReLU(alpha=0.1)(layer)
+        #layer = keras.layers.LeakyRELU(alpha=0.1)(layer)
         layer = Conv2D(feats, (3, 3), padding='same', use_bias=False)(layer)
-        layer = keras.layers.LeakyReLU(alpha=0.1)(layer)
+        layer = keras.layers.LeakyRELU(alpha=0.1)(layer)
         if residual: ### +
             layer_pre_add = layer
         layer = Conv2D(feats, (3, 3), padding='same', use_bias=False)(layer)
@@ -847,7 +857,7 @@ def create_unet_tower(layer, num_class, batchnorm_layers=[True, True, True, True
             l2,_ = make_multihead(layer, heads=feats, atom_nf=2, ks=(5,5))
             layer = concatenate([l1, l2])
         #layer = Conv2D(feats, (1,1), padding='same', use_bias=False)(layer)
-        #layer = keras.layers.LeakyReLU(alpha=0.1)(layer)
+        #layer = keras.layers.LeakyRELU(alpha=0.1)(layer)
         trunks.append(layer)
         layer = MaxPooling2D(pool_size=(2, 2))(layer)
 
@@ -856,9 +866,9 @@ def create_unet_tower(layer, num_class, batchnorm_layers=[True, True, True, True
         base_layer = trunks[depth]
         feats = feat[depth]
         #layer = Conv2D(feats, (1, 1), padding='same', use_bias=True)(layer)
-        #layer = keras.layers.LeakyReLU(alpha=0.1)(layer)
+        #layer = keras.layers.LeakyRELU(alpha=0.1)(layer)
         layer = Conv2D(feats, (3, 3), padding='same', use_bias=False)(layer)
-        layer = keras.layers.LeakyReLU(alpha=0.1)(layer)
+        layer = keras.layers.LeakyRELU(alpha=0.1)(layer)
         if residual: ### +
             layer_pre_add = layer
         layer = Conv2D(feats, (3, 3), padding='same', use_bias=False)(layer)
@@ -929,17 +939,17 @@ class UNet():
         inputs = Input(shape = img_shape)
         outputs = Conv2D(40, (5,5), padding='same')(inputs)
         outputs = Dropout(0.25)(outputs)
-        outputs = LeakyReLU(0.01)(outputs)
+        outputs = LeakyRELU(0.01)(outputs)
         outputs = MaxPooling2D(pool_size=(8,8))(outputs)
         outputs = Conv2D(24, (1,1), padding='same')(outputs)
         outputs = Dropout(0.25)(outputs)
-        outputs = LeakyReLU(0.01)(outputs)
+        outputs = LeakyRELU(0.01)(outputs)
         outputs = Conv2D(24, (3,3), padding='same')(outputs)
         outputs = Dropout(0.25)(outputs)
-        outputs = LeakyReLU(0.01)(outputs)
+        outputs = LeakyRELU(0.01)(outputs)
         outputs = UpSampling2D(size=(8,8))(outputs)
         outputs = Conv2D(24, (3,3), dilation_rate=(8,8), padding='same')(outputs)
-        outputs = LeakyReLU(0.01)(outputs)
+        outputs = LeakyRELU(0.01)(outputs)
         outputs = Conv2D(num_class, (3,3), padding='same')(outputs)
         outputs = Activation(K.softmax)(outputs)
         model = Model(inputs=inputs, outputs=outputs)
@@ -1002,10 +1012,10 @@ class UNet():
         noise_level = 0.005#0.01
 
         conv1 = Conv2D(init_feats, (3, 3), activation='linear', padding='same', use_bias=False, name='conv1_1')(conv1)
-        conv1 = keras.layers.LeakyReLU(alpha=0.1)(conv1)
+        conv1 = keras.layers.LeakyRELU(alpha=0.1)(conv1)
         conv1_orig = conv1
         conv1 = Conv2D(init_feats, (3, 3), activation='linear', use_bias=False, padding='same')(conv1)
-        conv1 = keras.layers.LeakyReLU(alpha=0.1)(conv1)
+        conv1 = keras.layers.LeakyRELU(alpha=0.1)(conv1)
         conv1 = keras.layers.Add()([conv1, conv1_orig])
         pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
         conv1 = Dropout(dropout_rate)(conv1)
@@ -1013,9 +1023,9 @@ class UNet():
         conv1 = keras.layers.GaussianDropout(gauss_dropout)(conv1)
         conv2 = Conv2D(init_feats*2, (3, 3), activation='linear', use_bias=False, padding='same')(pool1)
         conv2_orig = conv2
-        conv2 = keras.layers.LeakyReLU(alpha=0.1)(conv2)
+        conv2 = keras.layers.LeakyRELU(alpha=0.1)(conv2)
         conv2 = Conv2D(init_feats*2, (3, 3), activation='linear', use_bias=False, padding='same')(conv2)
-        conv2 = keras.layers.LeakyReLU(alpha=0.1)(conv2)
+        conv2 = keras.layers.LeakyRELU(alpha=0.1)(conv2)
         conv2 = keras.layers.Add()([conv2, conv2_orig])
         conv2 = Dropout(dropout_rate)(conv2)
         if batchnorm_layers[2]:
@@ -1024,9 +1034,9 @@ class UNet():
 
         conv3 = Conv2D(init_feats*4, (3, 3), activation='linear', use_bias=False, padding='same')(pool2)
         conv3_orig = conv3
-        conv3 = keras.layers.LeakyReLU(alpha=0.1)(conv3)
+        conv3 = keras.layers.LeakyRELU(alpha=0.1)(conv3)
         conv3 = Conv2D(init_feats*4, (3, 3), activation='linear', use_bias=False, padding='same')(conv3)
-        conv3 = keras.layers.LeakyReLU(alpha=0.1)(conv3)
+        conv3 = keras.layers.LeakyRELU(alpha=0.1)(conv3)
         #conv3 = keras.layers.Add()([conv3, conv3_orig])
         conv3 = Dropout(dropout_rate)(conv3)
         if batchnorm_layers[3]:
@@ -1038,9 +1048,9 @@ class UNet():
 
         conv4 = Conv2D(init_feats*8, (3, 3), activation='linear', use_bias=False, padding='same')(pool3)
         conv4_orig = conv4
-        conv4 = keras.layers.LeakyReLU(alpha=0.1)(conv4)
+        conv4 = keras.layers.LeakyRELU(alpha=0.1)(conv4)
         conv4 = Conv2D(init_feats*8, (3, 3), activation='linear', use_bias=False, padding='same')(conv4)
-        conv4 = keras.layers.LeakyReLU(alpha=0.1)(conv4)
+        conv4 = keras.layers.LeakyRELU(alpha=0.1)(conv4)
         #conv4 = keras.layers.Add()([conv4, conv4_orig])
         #if batchnorm_layers[4]:
         #    conv4 = BatchNormalization()(conv4)
@@ -1050,9 +1060,9 @@ class UNet():
 
         conv5 = Conv2D(init_feats*16, (3, 3), activation='linear', use_bias=False, padding='same')(pool4)
         conv5_orig = conv5
-        conv5 = keras.layers.LeakyReLU(alpha=0.1)(conv5)
+        conv5 = keras.layers.LeakyRELU(alpha=0.1)(conv5)
         conv5 = Conv2D(init_feats*16, (3, 3), activation='linear', use_bias=False, padding='same')(conv5)
-        conv5 = keras.layers.LeakyReLU(alpha=0.1)(conv5)
+        conv5 = keras.layers.LeakyRELU(alpha=0.1)(conv5)
         conv5 = keras.layers.Add()([conv5, conv5_orig])
         #if batchnorm_layers[5]:
         #    conv5 = BatchNormalization()(conv5)
@@ -1065,9 +1075,9 @@ class UNet():
         up6 = concatenate([up_conv5, crop_conv4], axis=concat_axis)
         conv6 = Conv2D(init_feats*8, (3, 3), activation='linear', use_bias=False, padding='same')(up6)
         conv6_orig = conv6
-        conv6 = keras.layers.LeakyReLU(alpha=0.1)(conv6)
+        conv6 = keras.layers.LeakyRELU(alpha=0.1)(conv6)
         conv6 = Conv2D(init_feats*8, (3, 3), activation='linear', use_bias=False, padding='same')(conv6)
-        conv6 = keras.layers.LeakyReLU(alpha=0.1)(conv6)
+        conv6 = keras.layers.LeakyRELU(alpha=0.1)(conv6)
         #conv6 = keras.layers.Add()([conv6, conv6_orig])
         #if batchnorm_layers[6]:
         #    conv6 = BatchNormalization()(conv6)
@@ -1080,9 +1090,9 @@ class UNet():
         up7 = concatenate([up_conv6, crop_conv3], axis=concat_axis)
         conv7 = Conv2D(init_feats*4, (3, 3), activation='linear', use_bias=False, padding='same')(up7)
         conv7_orig = conv7
-        conv7 = keras.layers.LeakyReLU(alpha=0.1)(conv7)
+        conv7 = keras.layers.LeakyRELU(alpha=0.1)(conv7)
         conv7 = Conv2D(init_feats*4, (3, 3), activation='linear', use_bias=False, padding='same')(conv7)
-        conv7 = keras.layers.LeakyReLU(alpha=0.01)(conv7)
+        conv7 = keras.layers.LeakyRELU(alpha=0.01)(conv7)
         #conv7 = keras.layers.Add()([conv7, conv7_orig])
         #if batchnorm_layers[7]:
         #    conv7 = BatchNormalization()(conv7)
@@ -1095,9 +1105,9 @@ class UNet():
         up8 = concatenate([up_conv7, crop_conv2], axis=concat_axis)
         conv8 = Conv2D(init_feats*2, (3, 3), activation='linear', use_bias=False, padding='same')(up8)
         conv8_orig = conv8
-        conv8 = keras.layers.LeakyReLU(alpha=0.1)(conv8)
+        conv8 = keras.layers.LeakyRELU(alpha=0.1)(conv8)
         conv8 = Conv2D(init_feats*2, (3, 3), activation='linear', use_bias=False, padding='same')(conv8)
-        conv8 = keras.layers.LeakyReLU(alpha=0.1)(conv8)
+        conv8 = keras.layers.LeakyRELU(alpha=0.1)(conv8)
         #conv8 = keras.layers.Add()([conv8, conv8_orig])
         if batchnorm_layers[8]:
             conv8 = BatchNormalization()(conv8)
@@ -1110,9 +1120,9 @@ class UNet():
         up9 = concatenate([up_conv8, crop_conv1], axis=concat_axis)
         conv9 = Conv2D(init_feats, (3, 3), activation='linear', use_bias=False, padding='same')(up9)
         conv9_orig = conv9
-        conv9 = keras.layers.LeakyReLU(alpha=0.1)(conv9)
+        conv9 = keras.layers.LeakyRELU(alpha=0.1)(conv9)
         conv9 = Conv2D(init_feats, (3, 3), activation='linear', use_bias=False, padding='same')(conv9)
-        conv9 = keras.layers.LeakyReLU(alpha=0.1)(conv9)
+        conv9 = keras.layers.LeakyRELU(alpha=0.1)(conv9)
         #conv9 = keras.layers.Add()([conv9, conv9_orig])
         #conv9 = Dropout(dropout_rate)(conv9)
         conv9 = keras.layers.GaussianNoise(noise_level)(conv9)
@@ -1133,19 +1143,19 @@ class UNet():
 def build_simple_cylinder(num_classes=6, ds=4, init_feats=32, feature_growth_rate=4, dilated_block_rates=[], ks=[(5,5),(3,3),(3,3),(3,3),(3,3)], use_transpose_conv=False, input_channels=3, model_save_path="model_checkpoint.h5"):
     x = inputs = Input(shape = (None, None, input_channels))
     x = Conv2D(init_feats, ks[0], activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
-    x = keras.layers.LeakyReLU(alpha=0.05)(x)
+    x = keras.layers.LeakyRELU(alpha=0.05)(x)
     nf = init_feats
     for layer in range(ds):
         x = Conv2D(nf, ks[1+layer], padding='same', use_bias=False)(x)
-        x = keras.layers.LeakyReLU(alpha=0.05)(x)
+        x = keras.layers.LeakyRELU(alpha=0.05)(x)
         x = BatchNormalization()(x)
         nf += feature_growth_rate
     x = Conv2D(nf, ks[1+layer], padding='same', use_bias=False)(x)
-    x = keras.layers.LeakyReLU(alpha=0.05)(x)
+    x = keras.layers.LeakyRELU(alpha=0.05)(x)
     x = BatchNormalization()(x)
     for layer in range(ds):
         x = Conv2D(nf, (3,3), padding='same')(x)
-        #x = keras.layers.LeakyReLU(alpha=0.05)(x)
+        #x = keras.layers.LeakyRELU(alpha=0.05)(x)
         nf -= feature_growth_rate
     x = Conv2D(num_classes, (1,1), padding='same')(x)
 
@@ -1176,27 +1186,27 @@ def build_simple_hourglass(args):
     conv=Conv2D #conv=SeparableConv2D
     x = inputs = Input(shape = (None, None, input_channels))
     x = Conv2D(init_feats, ks[0], activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
-    x = keras.layers.LeakyReLU(alpha=0.00)(x)
+    x = keras.layers.LeakyRELU(alpha=0.00)(x)
     nf = init_feats
     for layer in range(ds):
         x = conv(nf, ks[1+layer], padding='same', strides=(1,1), use_bias=True)(x)
-        x = keras.layers.LeakyReLU(alpha=0.01)(x)
+        x = keras.layers.LeakyRELU(alpha=0.01)(x)
         x = BatchNormalization()(x)
         x = MaxPooling2D(pool_size=(2,2), strides=(2,2))(x) #AveragePooling2D
         x = Dropout(dropout_rate)(x)
         nf += feature_growth_rate
     x = conv(nf, ks[1+layer], padding='same', use_bias=True)(x)
-    x = keras.layers.LeakyReLU(alpha=0.01)(x)
+    x = keras.layers.LeakyRELU(alpha=0.01)(x)
     x = BatchNormalization()(x)
     for layer in range(ds):
         x = UpSampling2D(size=(2, 2))(x)
         x = conv(nf, (5,5), padding='same', use_bias=True)(x)
         #x = Conv2DTranspose(nf, (5,5), strides=(2,2), padding='same')(x)
-        x = keras.layers.LeakyReLU(alpha=0.01)(x)
+        x = keras.layers.LeakyRELU(alpha=0.01)(x)
         nf -= feature_growth_rate
     x = Conv2D(num_classes, (1,1), padding='same', use_bias=False)(x)
     x = Dropout(dropout_rate)(x)
-    x = keras.layers.LeakyReLU(alpha=0.00)(x)
+    x = keras.layers.LeakyRELU(alpha=0.00)(x)
 
     model = Model(inputs, x)
     model.compile(loss=loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=lr)) #'nadam' #'adadelta')
@@ -1254,8 +1264,12 @@ def build_model(args):
     from regularizers import *
     from losses import *
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.40
-    set_session(tf.Session(config=config))
+    try:
+        config.gpu_options.per_process_gpu_memory_fraction = 0.95
+        set_session(tf.Session(config=config))
+    except:
+        config.gpu_options.per_process_gpu_memory_fraction = 0.40
+        set_session(tf.Session(config=config))
     model_type = args.model_type
     num_classes = args.num_classes
     # Build the model.
