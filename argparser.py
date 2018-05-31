@@ -61,7 +61,10 @@ def parse_args():
     if len(args.loss_weights) == 0:
         args.loss_weights = defaultdict(lambda:1.)
     else:
-        lw = [float(f) for f in args.loss_weights.split(",")]
-        args.loss_weights = {k:lw[k] for k in range(len(lw))}
-        print("Using loss weights:", args.loss_weights)
+        if args.loss_weights.find(",") >= 0:
+            lw = [float(f) for f in args.loss_weights.split(",")]
+            args.loss_weights = {k:lw[k] for k in range(len(lw))}
+            print("Using loss weights:", args.loss_weights)
+        else:
+            print("Using loss weights by class")
     return args

@@ -94,14 +94,15 @@ def continuous_f_measure_loss(gt, pred, weights=defaultdict(lambda:1.)):
         f1_score_approx = keras.layers.multiply([cr, cp])
         return 1.0-f1_score_approx
     global floattype
+    sumweights = 0.0
     for c in range(len(weights)):
         gtc = K.cast(gt[:,:,:,c], floattype)
         pdc = pred[:,:,:,c]
         cr = continuous_recall(gtc, pdc)
         cp = continuous_precision(gtc, pdc)
         f1_score_approx = keras.layers.multiply([cr, cp])
-        class_loss = weights[c] * (1.0 - f1_score_approx)
-        total_loss = total_loss + K.mean(class_loss)
+        class_loss = (1.0 - f1_score_approx)
+        total_loss = total_loss + K.sqrt(K.sqrt(K.mean(class_loss))) * weights[c]
         sumweights += weights[c]
 
     #h,w = K.shape(gt)[1], K.shape(gt)[2]
@@ -128,7 +129,8 @@ def per_class_margin(gt, pred, num_classes=nc, weights=defaultdict(lambda:1.)):
     loss = K.variable(0.0, dtype=floattype)
     for c in range(num_classes):
         # Added mean reduction.
-        loss_piece = K.mean(keras.layers.multiply([K.cast(gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], margin_plus - pred[:,:,:,c]]))]) + lmbda * keras.layers.multiply([K.cast(0.9 - gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], pred[:,:,:,c]-margin_neg]))]))
+        loss_piece = keras.layers.multiply([K.cast(gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], margin_plus - pred[:,:,:,c]]))]) + lmbda * keras.layers.multiply([K.cast(0.9 - gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], pred[:,:,:,c]-margin_neg]))])
+        loss_piece = K.mean(loss_piece)
         loss_piece = loss_piece * weights[c]
         loss = loss + loss_piece
 
