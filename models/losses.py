@@ -4,6 +4,9 @@ import keras.backend as K
 import keras
 import tensorflow as tf
 
+
+from collections import defaultdict
+
 # TODO: Alternatively to f-measure, simply minimize the variance of the diff.
 # This will help balance positives and negatives.
 # False positives are where pred_argmax_masked > gt
@@ -21,7 +24,13 @@ floattype='float32'#floattype
 nc=4
 
 from keras.utils.generic_utils import get_custom_objects
-def per_class_margin(gt, pred, num_classes=nc):
+def get_per_class_margin(weights=defaultdict(lambda:1.)):
+    print("Using Get Per-class Margin loss")
+    return lambda gt,pred: per_class_margin(gt, pred, weights=weights)
+
+def per_class_margin(gt, pred, num_classes=nc, weights=defaultdict(lambda:1.)):
+    if len(weights) == 1:
+        weights = weights * num_classes
     global floattype
     margin_plus = 0.9
     margin_neg  = 0.1
@@ -29,6 +38,7 @@ def per_class_margin(gt, pred, num_classes=nc):
     loss = K.variable(0.0)
     for c in range(num_classes):
         loss_piece = keras.layers.multiply([K.cast(gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], margin_plus - pred[:,:,:,c]]))]) + lmbda * keras.layers.multiply([K.cast(0.9 - gt[:,:,:,c], floattype), K.square(keras.layers.maximum([0.1*gt[:,:,:,c], pred[:,:,:,c]-margin_neg]))])
+        loss_piece = loss_piece * weights[c]
         loss = loss + loss_piece
 
     return loss
