@@ -75,7 +75,7 @@ def autodiscover_suffix_to_class_map(folder, exts=["jpg", "png", "tif"]):
     return mls
 
 
-def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["jpg","png","tif"], suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}, debuglevel=-1):
+def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["jpg","png","tif"], suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}, debuglevel=3):
     gtdim = num_classes = len(suffix_to_class_map)
     classnums = range(0, num_classes)
     if dontcare_idx > 0:
@@ -86,6 +86,7 @@ def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["j
     for class_suffix, classnum in suffix_to_class_map.items():
         for gtext in gtexts:
             gt_layer_path = os.path.splitext(image_path)[0] + "_" + class_suffix + "." + gtext
+            print(gt_layer_path)
             if not os.path.exists(gt_layer_path):
                 gt_layer_path = image_path + "_" + class_suffix + "." + gtext
             if os.path.exists(gt_layer_path):

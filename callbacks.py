@@ -149,12 +149,13 @@ class DisplayTrainingSamplesCallback(Callback):
                     pix_counts_per_class = np.sum(gt, axis=(0,1,2))
                     self.weighted_best_thresholds = {c:pix_counts_per_class[c]*best_thresholds[c] for c in best_thresholds.keys()}
                     for c in best_thresholds.keys():
-                        self.pixels_per_class_per_sample[c].append(pix_counts_per_class[c])
-                        self.historic_weighted_thresholds[c].append(self.weighted_best_thresholds[c])
-                        if len(self.pixels_per_class_per_sample[c]) > 100:
-                            del self.pixels_per_class_per_sample[c][0]
-                            del self.historic_weighted_thresholds[c][0]
-                    self.historic_averaged_best_thresholds = {c:(np.mean(self.historic_weighted_thresholds[c])/np.sum(self.historic_weighted_thresholds[c])) for c in best_thresholds.keys()}
+                        if pix_counts_per_class[c] > 0:
+                            self.pixels_per_class_per_sample[c].append(pix_counts_per_class[c])
+                            self.historic_weighted_thresholds[c].append(self.weighted_best_thresholds[c])
+                            if len(self.pixels_per_class_per_sample[c]) > 30:
+                                del self.pixels_per_class_per_sample[c][0]
+                                del self.historic_weighted_thresholds[c][0]
+                    self.historic_averaged_best_thresholds = {c:(np.mean(self.historic_weighted_thresholds.get(c, [0.5]))/np.sum(self.pixels_per_class_per_sample.get(c, [1.0,]))) for c in range(preds.shape[-1])}
                     print("Best historic averaged thresholds:", self.historic_averaged_best_thresholds)
                     if self.dac is not None:
                         print("Updating Validation to use best thresholds computed on training set...")
