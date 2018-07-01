@@ -9,9 +9,10 @@ def parse_args():
     parser.add_argument('--test_folder', nargs="?", default="")
     parser.add_argument('--framework', type=str, default="tensorflow", help="Deep learning framework to use for model and training. Options: keras, tensorflow (Default: tensorflow)")
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
-    parser.add_argument('--loss', type=str, default="categorical_crossentropy", help="Loss function to use (default: categorical_crossentropy)")
+    parser.add_argument('--loss', type=str, default="mse", help="Loss function to use (default: categorical_crossentropy)")
     parser.add_argument('--loss_weights', type=str, default="", help="Per-class loss weights, as comma-delimited list of floats. Example: 5,1,.5,.2,.1")
     parser.add_argument('--loss_blur_sigma', type=float, default=25.0, help="Gaussian blurring radius applied to predictions and ground truth prior to loss metric computation. Helps to smooth out spatial ambiguity.")
+    parser.add_argument('--predthresholds', type=str, default="0.5", help="Per-class prediction thresholds, as a comma-delimited list of floating point values, e.g. \"0.5,0.2,0.7,0.1,0.8\"")
 
     # Training parameters.
     parser.add_argument('--num_classes', type=int, default=5, metavar='N', help='number of classes (default: 4)')
@@ -67,4 +68,9 @@ def parse_args():
             print("Using loss weights:", args.loss_weights)
         else:
             print("Using loss weights by class")
+    if len(args.predthresholds) == 0:
+        args.predthresholds = list(0.5) * args.num_classes
+    else:
+        args.predthresholds = [float(f) for f in args.predthresholds.split(",")]
+        print("Using prediction thresholds:", args.predthresholds)
     return args

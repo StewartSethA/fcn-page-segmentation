@@ -1286,7 +1286,7 @@ def build_model(args):
     config = tf.ConfigProto()
     try:
         print("Setting GPU memory usage to 90%")
-        config.gpu_options.per_process_gpu_memory_fraction = 0.50
+        config.gpu_options.per_process_gpu_memory_fraction = 0.90
         set_session(tf.Session(config=config))
     except:
         print("Setting GPU memory usage to 40%")

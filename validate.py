@@ -25,7 +25,7 @@ def validate(args):
         args.num_classes = num_classes
     model = build_model(args)
     TestModel(model=model, model_basepath=args.load_model_path, testfolder=test_folder, output_folder=args.output_folder)
-    score_and_visualize_folders(test_folder, args.output_folder, suffix_to_class_map=suffix_to_class_map)
+    score_and_visualize_folders(test_folder, args.output_folder, suffix_to_class_map=suffix_to_class_map, predthreshold=args.predthresholds)
 
 
 # TODO: Monitor maximum memory usage during inference.

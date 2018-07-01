@@ -114,6 +114,7 @@ class DisplayTrainingSamplesCallback(Callback):
                 if self.model is not None:
                     im = self.training_generator.image
                     gt = self.training_generator.gt
+                    im = np.pad(im, ((0,gt.shape[0]-im.shape[0]),(0,gt.shape[1]-im.shape[1]),(0,0)), mode='constant', constant_values=0)
                     plt.figure("Training_Prediction")
                     plt.clf()
                     print("DisplayTrainingSamplesCallback input shape", im.shape)

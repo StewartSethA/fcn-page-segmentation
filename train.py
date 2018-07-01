@@ -55,8 +55,10 @@ def train(args):
     index = index_training_set_by_class(training_folder, num_classes=num_classes, suffix_to_class_map=suffix_to_class_map)
     class_to_samples, image_list, pixel_counts_byclass = index
     if type(args.loss_weights) == str:
-        pixsum = float(sum([pixel_counts_byclass[c] for c in pixel_counts_byclass.keys()]))
-        args.loss_weights = {c:pixsum/pixel_counts_byclass[c] for c in pixel_counts_byclass.keys()}
+        sqrt=True
+        import math
+        pixsum = float(sum([math.sqrt(pixel_counts_byclass[c]) for c in pixel_counts_byclass.keys()]))
+        args.loss_weights = {c:pixsum/math.sqrt(pixel_counts_byclass[c]) for c in pixel_counts_byclass.keys()}
         print("Auto-discovered class weights from pixel prevalence in training set:", args.loss_weights)
     if len(image_list) == 0:
         print("No images found in training folder! Cannot train; aborting!")
