@@ -50,11 +50,15 @@ def lookup_loss(loss, args):
 def reluclip(x, max_value=1.0):
     return K.relu(x, max_value=max_value)
 
+def conv_cylinder(feats, ks=3, nonlinearity=reluclip):
+    pass
+
 def unet(args):
     num_classes = args.num_classes
-    initial_feats = f = 32
+    initial_feats = f = 4 #8 #16 # Original batch was 32
     inputs = Input((None, None, 3))
     conv1 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(inputs)
+    conv1 = BatchNormalization()(conv1)
     print("conv1 shape:",conv1.shape)
     conv1 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv1)
     print("conv1 shape:",conv1.shape)
@@ -63,28 +67,34 @@ def unet(args):
     print("pool1 shape:",pool1.shape)
 
     conv2 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool1)
+    conv2 = BatchNormalization()(conv2)
     print("conv2 shape:",conv2.shape)
     conv2 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv2)
     print("conv2 shape:",conv2.shape)
+    conv2 = Dropout(0.15)(conv2)
     pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
     pool2 = BatchNormalization()(pool2)
     print("pool2 shape:",pool2.shape)
 
     conv3 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool2)
+    conv3 = BatchNormalization()(conv3)
     print("conv3 shape:",conv3.shape)
     conv3 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv3)
     print("conv3 shape:",conv3.shape)
+    conv3 = Dropout(0.15)(conv3)
     pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
     pool3 = BatchNormalization()(pool3)
     print("pool3 shape:",pool3.shape)
 
     conv4 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool3)
+    conv4 = BatchNormalization()(conv4)
     conv4 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv4)
     drop4 = Dropout(0.5)(conv4)
     pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
     pool4 = BatchNormalization()(pool4)
 
     conv5 = Conv2D(f*16, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool4)
+    conv5 = BatchNormalization()(conv5)
     conv5 = Conv2D(f*16, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv5)
     drop5 = Dropout(0.5)(conv5)
     drop5 = BatchNormalization()(drop5)
@@ -92,28 +102,34 @@ def unet(args):
     up6 = Conv2D(f*8, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(drop5))
     merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 3)
     conv6 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge6)
+    conv6 = BatchNormalization()(conv6)
     conv6 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv6)
     conv6 = BatchNormalization()(conv6)
 
     up7 = Conv2D(f*4, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv6))
     merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 3)
     conv7 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge7)
+    conv7 = BatchNormalization()(conv7)
     conv7 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv7)
     conv7 = BatchNormalization()(conv7)
 
     up8 = Conv2D(f*2, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv7))
     merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 3)
     conv8 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge8)
+    conv8 = BatchNormalization()(conv8)
     conv8 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv8)
     conv8 = BatchNormalization()(conv8)
 
     up9 = Conv2D(f, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv8))
     merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 3)
     conv9 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge9)
+    conv9 = BatchNormalization()(conv9)
     conv9 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
+    conv9 = BatchNormalization()(conv9)
     conv9 = Conv2D(num_classes*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
     conv9 = BatchNormalization()(conv9)
     conv10 = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=False)(conv9)
+    #conv10 = Lambda(lambda x:x*10)(conv10)
     #conv10 = Lambda(function=reluclip)(conv10)
 
     model = Model(input = inputs, output = conv10)
@@ -128,8 +144,8 @@ def template_matcher_single_hidden_layer(args):
     input_channels = 3
     num_classes = args.num_classes
     use_bias = False
-    kernel_size = ks = (26,26)
-    hidden_layer_size = 100
+    kernel_size = ks = (7,7) #(13,13) #Original was (27,27) (26,26)
+    hidden_layer_size = 400 #100
 
     y = model_inputs = Input(shape=(None, None, input_channels))
     y = Conv2D(4, (3,3), padding='same', use_bias=use_bias)(y)
@@ -342,9 +358,11 @@ import densenet.densenet_fc as dc
 
 def densenet_tiramisu(args):
     # TODO Configure this!
+    model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=32, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=4, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
-    model = dc.DenseNetFCN((None, None, 3), nb_dense_block=1, growth_rate=8, nb_layers_per_block=2, upsampling_type='upsampling', classes=args.num_classes)
+    #Following was the original:
+    #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=1, growth_rate=8, nb_layers_per_block=2, upsampling_type='upsampling', classes=args.num_classes)
     model.compile(loss=lookup_loss(args.loss, args), metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=0.001, clipvalue=0.5)) #optimizer='nadam') #'adadelta')
     return model
 
@@ -475,8 +493,11 @@ def build_model_functional_old(args):
     initial_trunk = current_layer
     branch_convs = [(11,11),(5,5),(3,3),(3,3),(7,7)]
     #branch_feats = [10,20,15,15,15]
-    branch_feats = [10,15,20,20,15]
-    branch_depths = [2, 1, 1, 1, 3]
+    # 2015-05-31 eval
+    #branch_feats = [10,15,20,20,15
+    #branch_depths = [2, 1, 1, 1, 3]]
+    branch_feats = [20,30,40,40,30]
+    branch_depths = [2, 2, 2, 2, 3]
     previous_trunk = initial_trunk
     #branch_trunks.append(branch_trunk)
     # Create the branch trunks.
@@ -1194,39 +1215,42 @@ def build_simple_cylinder(num_classes=6, ds=4, init_feats=32, feature_growth_rat
 def build_simple_hourglass(args):
     num_classes=args.num_classes
     ds=4
-    init_feats=32
-    feature_growth_rate=4
+    init_feats=4#32 #Original
+    feature_growth_rate=32#=8#2#4#Multiplicative now.
     ks=[(5,5),(3,3),(3,3),(3,3),(3,3)]
-    loss='mse'
+    loss=args.loss
     lr=args.lr
     dropout_rate=0.0
     use_transpose_conv=False
     input_channels=3
     model_save_path=args.model_save_path
+    use_bias = False
     conv=Conv2D #conv=SeparableConv2D
     x = inputs = Input(shape = (None, None, input_channels))
     x = Conv2D(init_feats, ks[0], activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
-    x = LeakyRELU(alpha=0.00)(x)
+    x = BatchNormalization()(x)
+    x = LeakyRELU(alpha=0.05)(x)
     nf = init_feats
     for layer in range(ds):
-        x = conv(nf, ks[1+layer], padding='same', strides=(1,1), use_bias=True)(x)
-        x = LeakyRELU(alpha=0.01)(x)
+        x = conv(nf, ks[1+layer], padding='same', strides=(1,1), use_bias=use_bias)(x)
+        x = LeakyRELU(alpha=0.05)(x)
         x = BatchNormalization()(x)
         x = MaxPooling2D(pool_size=(2,2), strides=(2,2))(x) #AveragePooling2D
         x = Dropout(dropout_rate)(x)
-        nf += feature_growth_rate
-    x = conv(nf, ks[1+layer], padding='same', use_bias=True)(x)
-    x = LeakyRELU(alpha=0.01)(x)
+        nf +=feature_growth_rate#+= feature_growth_rate
+    x = conv(nf, ks[1+layer], padding='same', use_bias=use_bias)(x)
+    x = LeakyRELU(alpha=0.05)(x)
     x = BatchNormalization()(x)
     for layer in range(ds):
         x = UpSampling2D(size=(2, 2))(x)
-        x = conv(nf, (5,5), padding='same', use_bias=True)(x)
+        x = conv(nf, (5,5), padding='same', use_bias=use_bias)(x)
+        x = BatchNormalization()(x)
         #x = Conv2DTranspose(nf, (5,5), strides=(2,2), padding='same')(x)
-        x = LeakyRELU(alpha=0.01)(x)
-        nf -= feature_growth_rate
-    x = Conv2D(num_classes, (1,1), padding='same', use_bias=False)(x)
-    x = Dropout(dropout_rate)(x)
-    x = LeakyRELU(alpha=0.00)(x)
+        x = LeakyRELU(alpha=0.05)(x)
+        nf -=feature_growth_rate#-= feature_growth_rate
+    x = Conv2D(num_classes, (1,1), padding='same', use_bias=False, activation='sigmoid')(x)
+    #x = Dropout(dropout_rate)(x)
+    #x = LeakyRELU(alpha=0.00)(x)
 
     model = Model(inputs, x)
     model.compile(loss=loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=lr)) #'nadam' #'adadelta')
@@ -1284,38 +1308,32 @@ def build_model(args):
     from regularizers import *
     from losses import *
     config = tf.ConfigProto()
-    try:
-        print("Setting GPU memory usage to 90%")
-        config.gpu_options.per_process_gpu_memory_fraction = 0.90
-        set_session(tf.Session(config=config))
-    except:
-        print("Setting GPU memory usage to 40%")
-        config.gpu_options.per_process_gpu_memory_fraction = 0.40
-        set_session(tf.Session(config=config))
+    #try:
+    #    print("Setting GPU memory usage to 90%")
+    #    config.gpu_options.per_process_gpu_memory_fraction = 0.90
+    #    set_session(tf.Session(config=config))
+    #except:
+    #    print("Setting GPU memory usage to 40%")
+    #    config.gpu_options.per_process_gpu_memory_fraction = 0.40
+    #    set_session(tf.Session(config=config))
+    mem_fraction = 0.90
+    while mem_fraction > 0.0:
+        try:
+            print("Setting GPU memory usage to %02f%", mem_fraction*100)
+            config.gpu_options.per_process_gpu_memory_fraction = mem_fraction
+            set_session(tf.Session(config=config))
+            break
+        except:
+            mem_fraction *= 0.75
+    
     model_type = args.model_type
     num_classes = args.num_classes
-    # Build the model.
-    #if model_type == 'densenet':
-    #    model = densenet_for_semantic_segmentation(num_classes=num_classes, dense_block_init_feats=args.initial_features_per_block,
-    #        dense_block_growth_rate=args.feature_growth_rate, updense_init_feats=args.upsampling_path_initial_features, updense_growth_rate=args.upsampling_path_growth_rate,
-    #        bottleneck_feats=args.bottleneck_feats, bottleneck_growth_rate=args.bottleneck_growth_rate,
-    #        block_layers=args.block_layers, layers_per_block=args.layers_per_block, model_save_path=args.load_model_path, use_transpose_conv=False, use_bias=False)
-    #elif model_type == 'hourglass':
-    #    model = build_simple_hourglass(num_classes=num_classes, init_feats=args.initial_features_per_block, feature_growth_rate=args.feature_growth_rate, ds=args.block_layers)
-    #elif model_type == 'tensmeyer':
-    #    print("Not implemented")
-    #    #build_model_functional_old(num_classes=6, num_feats=[[8, 16, 32, 32, 32, 32], [8,]], ks=[[(3,3),(3,3),(3,3),(5,5),(5,5),(5,5)],[(9,9)]], ds=[[2,2,2,-2,-2,-2],[(1,1)]], combine_modes='concat', output_strides=(1,1), input_channels=3, model_save_path='model.h5', use_transpose_conv=False)
-    #elif model_type == 'dilatednet':
-    #    model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
-    #elif model_type == 'unet':
-    #    model = build_simple_hourglass(initial_feats=dense_block_init_feats, ds=args.block_layers)
-    #else:
-    if True:
-        import sys
-        current_module = sys.modules[__name__]
-        model = getattr(current_module, model_type)
-        print("Importing model type named", model_type)
-        model = model(args)
+
+    import sys
+    current_module = sys.modules[__name__]
+    model = getattr(current_module, model_type)
+    print("Importing model type named", model_type)
+    model = model(args)
     if os.path.exists(args.load_model_path):
         print("Loading existing model weights...")
         model.load_weights(args.load_model_path, by_name=True)

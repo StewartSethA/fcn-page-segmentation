@@ -2,6 +2,12 @@ from __future__ import print_function
 import os
 import errno
 
+def create_LaTeX_figure(imgs, labels, captions):
+    pass
+
+def csv_to_LaTeX_table(csv):
+    pass
+
 def mkdir_p(path):
     try:
         os.makedirs(path)

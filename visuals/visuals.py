@@ -14,7 +14,7 @@ def vis_img(img, maxh=512, maxw=512, debuglevel=0, brightness=0.33, bgr=True):
         print("vis_img")
 
     # debug
-    vis = img * brightness
+    vis = img * brightness #/ 10
     if bgr:
         v = vis[:,:,0].copy()
         vis[:,:,0] = vis[:,:,2]
