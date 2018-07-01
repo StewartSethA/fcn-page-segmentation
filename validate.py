@@ -35,6 +35,8 @@ def validate(args):
 # TODO: Display overlay of predicted pixels with original image.
 
 if __name__ == "__main__":
+    # TODO: Infer automatically the best thresholds to use, on the training set.
+    # Then apply these thresholds to the predicted images.
     args = parse_args()
     import numpy as np
     np.random.seed(args.seed)  # for reproducibility

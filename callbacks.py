@@ -1,6 +1,6 @@
 from __future__ import print_function
 import matplotlib.pyplot as plt
-plt.ion()
+#plt.ion()
 import numpy as np
 import cv2
 import json
@@ -99,32 +99,37 @@ class DisplayTrainingSamplesCallback(Callback):
         if self.batch_num % self.interval == 0:
             print("DisplayTrainingSamplesCallback")
             if self.training_generator.gt is not None:
-                plt.figure("Training_GT")
-                plt.clf()
-                v = show(self.training_generator.gt, bgr=True)
-                plt.imshow((v), interpolation='none')
+                #plt.figure("Training_GT")
+                #plt.clf()
+                v = show(self.training_generator.gt, bgr=False)
+                #plt.imshow((v), interpolation='none')
                 if self.log_dir is not None:
-                    plt.savefig(os.path.join(self.log_dir, "TrainGT.png"))
+                    cv2.imwrite(os.path.join(self.log_dir, "TrainGT.png"), v*255)
+                    #plt.savefig(os.path.join(self.log_dir, "TrainGT.png"))
             if self.training_generator.image is not None:
-                plt.figure("Training_Image")
-                plt.clf()
-                plt.imshow((self.training_generator.image), interpolation='none')
+                #plt.figure("Training_Image")
+                #plt.clf()
+                #plt.imshow((self.training_generator.image), interpolation='none')
                 if self.log_dir is not None:
-                    plt.savefig(os.path.join(self.log_dir, "TrainImage.png"))
+                    pass
+                    #plt.savefig(os.path.join(self.log_dir, "TrainImage.png"))
                 if self.model is not None:
                     im = self.training_generator.image
                     gt = self.training_generator.gt
-                    plt.figure("Training_Prediction")
-                    plt.clf()
+                    #plt.figure("Training_Prediction")
+                    #plt.clf()
+                    if self.log_dir is not None:
+                        cv2.imwrite(os.path.join(self.log_dir, "Train.jpg"), show(im, bgr=False)*255)
                     print("DisplayTrainingSamplesCallback input shape", im.shape)
                     preds = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))
                     self.pred = preds[0]
                     print("Pred shape:", self.pred.shape)
                     print("Pred min/max:", np.min(self.pred), np.max(self.pred))
-                    plt.imshow((show(self.pred, bgr=True)), interpolation='none')
+                    #plt.imshow((show(self.pred, bgr=True)), interpolation='none')
                     if self.log_dir is not None:
-                        plt.savefig(os.path.join(self.log_dir, "TrainPred.png"))
-                    plt.pause(0.001)
+                        cv2.imwrite(os.path.join(self.log_dir, "TrainPred.jpg"), show(self.pred, bgr=False)*255)
+                        #plt.savefig(os.path.join(self.log_dir, "TrainPred.png"))
+                    #plt.pause(0.001)
 
                     # Find best per-class thresholds as well.
                     best_fscores = defaultdict(lambda:0)
@@ -343,25 +348,26 @@ class DisplayAccuracyCallback(Callback):
         #    show(batch_x[0], batch_y[0], preds[0], self.h, self.w, impath, self.batch_num, do_show=False)
 
         #if self.training_generator.gt is not None:
-        plt.figure("Validation_GT")
-        plt.clf()
+        #plt.figure("Validation_GT")
+        #plt.clf()
         v = show(batch_y[0], bgr=True)
-        plt.imshow((v), interpolation='none')
+        #plt.imshow((v), interpolation='none')
         #if self.training_generator.image is not None:
-        plt.figure("Validation_Image")
-        plt.clf()
+        #plt.figure("Validation_Image")
+        #plt.clf()
         im = batch_x[0]
-        plt.imshow((im), interpolation='none')
+        #plt.imshow((im), interpolation='none')
         #if self.model is not None:
-        plt.figure("Validation_Prediction")
-        plt.clf()
+        #plt.figure("Validation_Prediction")
+        #plt.clf()
         print("DisplayValidationSamplesCallback input shape", im.shape)
         #self.pred = self.model.predict(np.reshape(im, [1,im.shape[0],im.shape[1],im.shape[2]]))[0]
         self.pred = preds[0]
         print("Pred shape:", self.pred.shape)
         print("Pred min/max:", np.min(self.pred), np.max(self.pred))
-        plt.imshow((show(self.pred, bgr=True)), interpolation='none')
-        plt.pause(0.001)
+        #plt.imshow((show(self.pred, bgr=True)), interpolation='none')
+        # TODO plt.savefig(
+        #plt.pause(0.001)
 
         print("Computing precisions, recalls, etc.!")
         #return 2 # 200 MB per call memory leak is coming from up here!
@@ -498,8 +504,8 @@ class DisplayAccuracyCallback(Callback):
                     shutil.copy('model_checkpoint.h5', modeldest)
                     modeldest = os.path.join(os.path.dirname(self.training_generator_class.dataset_sampler.image_list[0]), "model_checkpoint_BEST.h5")
 
-        plt.figure("Mini-Validation Metrics By Class")
-        plt.clf()
+        #plt.figure("Mini-Validation Metrics By Class")
+        #plt.clf()
         #fig, ax = plt.subplots()
         index = np.arange(preds.shape[-1]+1)
         bar_width = 0.15
@@ -523,20 +529,20 @@ class DisplayAccuracyCallback(Callback):
         acc_stds = [np.std(np.array(self.pixaccs[c])) for c in range(preds.shape[-1])]
         acc_stds.append(np.std(np.array([self.pixaccs[c] for c in range(preds.shape[-1])])))
         #print(prec_means, prec_stds, len(prec_means), len(prec_stds))
-        prec_rects = plt.bar(index, prec_means, bar_width, alpha=opacity, color='r', yerr=prec_stds, error_kw=error_config, label="Precision")
-        rec_rects = plt.bar(index+bar_width, rec_means, bar_width, alpha=opacity,color='b',yerr=rec_stds, error_kw=error_config, label="Recall")
-        fsc_rects = plt.bar(index+2*bar_width, fsc_means, bar_width, alpha=opacity,color='xkcd:purple',yerr=fsc_stds, error_kw=error_config, label="F-Measure")
-        pixacc_rects = plt.bar(index+3*bar_width, acc_means, bar_width, alpha=opacity, color='g', yerr=acc_stds, error_kw=error_config, label="Pixel Accuracy")
-        plt.xlabel('Class Number')
-        plt.ylabel('Performance Measure')
+        #prec_rects = plt.bar(index, prec_means, bar_width, alpha=opacity, color='r', yerr=prec_stds, error_kw=error_config, label="Precision")
+        #rec_rects = plt.bar(index+bar_width, rec_means, bar_width, alpha=opacity,color='b',yerr=rec_stds, error_kw=error_config, label="Recall")
+        #fsc_rects = plt.bar(index+2*bar_width, fsc_means, bar_width, alpha=opacity,color='xkcd:purple',yerr=fsc_stds, error_kw=error_config, label="F-Measure")
+        #pixacc_rects = plt.bar(index+3*bar_width, acc_means, bar_width, alpha=opacity, color='g', yerr=acc_stds, error_kw=error_config, label="Pixel Accuracy")
+        #plt.xlabel('Class Number')
+        #plt.ylabel('Performance Measure')
         # TODO: Genericize!
-        plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, "All"))
-        plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, "All"))
-        plt.legend()
-        plt.title('Metric Chart')
-        plt.tight_layout()
-        plt.pause(0.0001)
-        plt.savefig(os.path.join(self.log_dir, 'LossMetrics.png'))
+        #plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, "All"))
+        #plt.xticks(index + bar_width / 2, (1, 2, 3, 4, 5, "All"))
+        #plt.legend()
+        #plt.title('Metric Chart')
+        #plt.tight_layout()
+        #plt.pause(0.0001)
+        #plt.savefig(os.path.join(self.log_dir, 'LossMetrics.png'))
 
         print("========== Overall stats: =============")
         print("Average activation:", np.mean(preds), "Max activation:", np.max(preds), "Min activation:", np.min(preds))
@@ -554,18 +560,18 @@ class DisplayAccuracyCallback(Callback):
         # Scale the pixacc for visualization
         import math
         self.pixacc.append(math.log(av_acc/preds.shape[-1]+0.0000000000001)+1.0)
-        plt.figure("Training Loss and Mini-Validation Metric History")
-        plt.clf()
-        plt.plot(self.losses, color='xkcd:orange')
-        plt.plot(self.smoothedlosses, color='xkcd:teal')
-        plt.plot(self.fscore, color='xkcd:purple')
-        plt.plot(self.reca, color='b')
-        plt.plot(self.prec, color='r')
-        plt.plot(self.pixacc, color='g')
-        plt.tight_layout()
-        plt.title('Loss and Metric History')
-        plt.pause(0.001)
-        plt.savefig(os.path.join(self.log_dir, 'training.png'))
+        #plt.figure("Training Loss and Mini-Validation Metric History")
+        #plt.clf()
+        #plt.plot(self.losses, color='xkcd:orange')
+        #plt.plot(self.smoothedlosses, color='xkcd:teal')
+        #plt.plot(self.fscore, color='xkcd:purple')
+        #plt.plot(self.reca, color='b')
+        #plt.plot(self.prec, color='r')
+        #plt.plot(self.pixacc, color='g')
+        #plt.tight_layout()
+        #plt.title('Loss and Metric History')
+        #plt.pause(0.001)
+        #plt.savefig(os.path.join(self.log_dir, 'training.png'))
         # Compute Precision, Recall, F-Score, and Pixel accuracy per class.
 
         #mem = psutil.virtual_memory()
@@ -733,7 +739,7 @@ class TestModelCallback(Callback):
         plt.figure(1)
         plt.clf()
         plt.plot(gradient_history)
-        plt.pause(0.001)
+        #plt.pause(0.001)
         '''
         self.loss_history.append(logs['loss'])
 
