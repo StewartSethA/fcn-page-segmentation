@@ -77,6 +77,7 @@ def autodiscover_suffix_to_class_map(folder, exts=["jpg", "png", "tif"]):
 
 def load_gt_from_suffices(image_path, num_classes=6, dontcare_idx=-1, gtexts=["jpg","png","tif"], suffix_to_class_map={"DL":0, "HW":1, "MP":2, "LN":3, "ST":4}, debuglevel=3):
     gtdim = num_classes = len(suffix_to_class_map)
+    #print("suffix_to_class_map", suffix_to_class_map, gtexts)
     classnums = range(0, num_classes)
     if dontcare_idx > 0:
         gtdim = num_classes + 1
@@ -313,7 +314,9 @@ def load_gt_automatic(image_path, num_classes=6, dontcare_idx=-1, use_disk_cache
     if debuglevel > 3:
         print("Loading GT for base file", image_path)
     gt_loader = load_gt_from_suffices
+    gt_layer_path = None
     if os.path.exists(image_path.replace("jpg", "png")):
+        # Load a jpg, png pair and assume that the png is the RGB layer-bit-indexed representation of the ground-truth.
         gt_loader = load_gt_multihot_bit_indexed_png
         if debuglevel > 2:
             print("Using multihot layer loader on", image_path)

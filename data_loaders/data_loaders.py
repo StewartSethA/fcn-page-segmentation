@@ -160,7 +160,8 @@ class ClassImageSampler(object):
             # Sample the patch from an area containing GT pixels of the specified class.
             classnum = c
             startx, starty = self.get_start_indices(classnum, gt, subcrop_dim, image_path)
-
+            startx = min(image.shape[1]-subcrop_dim, startx)
+            starty = min(image.shape[0]-subcrop_dim, starty)
             # TODO: Move to a logger in the using class!
             #if hasattr(self.dataset_sampler, resampled_classbalance):
             #    for cd in range(gt.shape[-1]):
@@ -390,6 +391,9 @@ class PerformanceFeedbackDatasetSampler(DatasetSampler):
             # Select according to performance-weighted probabilities.
             if debuglevel > 2:
                 print(self.class_indices, self.class_weights)
+            if np.sum(self.class_weights) != 1.0:
+                print("FIXING class weights; don't sum to 1:", self.class_weights, "; setting all probabilities equal...")
+                self.class_weights = [1.0/len(self.class_indices)]*len(self.class_indices)
             c = np.random.choice(self.class_indices, p=self.class_weights)
             if debuglevel > 0:
                 print("Randomly sampling class by fscore. Got class ", c, "with weight", self.class_weights[c], " and index ", self.class_indices.index(c))
@@ -581,6 +585,7 @@ class ImageAndGTBatcher(object):
 
                 # Pad or crop the image.
                 image, gt = self.image_sampler.sample_image_and_gt(image, gt, c=c, image_path=image_path, subcrop_dim=subcrop_dim, max_downsampling=self.max_downsampling)
+
 
                 # DO Data augmentation!
                 if self.data_augmenter:
