@@ -24,6 +24,11 @@ def validate(args):
         num_classes = len(suffix_to_class_map)
         args.num_classes = num_classes
     model = build_model(args)
+    print("Model type:", args.model_type)
+    print("Total parameters:", model.count_params())
+
+    # Print a model summary for debugging.
+    print("Model Summary:", model.summary())
     TestModel(model=model, model_basepath=args.load_model_path, testfolder=test_folder, output_folder=args.output_folder)
     score_and_visualize_folders(test_folder, args.output_folder, suffix_to_class_map=suffix_to_class_map, predthreshold=args.predthresholds)
 
@@ -40,5 +45,6 @@ if __name__ == "__main__":
     args = parse_args()
     import numpy as np
     np.random.seed(args.seed)  # for reproducibility
+
 
     validate(args)
