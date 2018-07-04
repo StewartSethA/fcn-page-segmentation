@@ -143,6 +143,7 @@ def unet(args):
 
 # Simplest nets first.
 
+# Simple L-Layer CNN with NO downsampling.
 def template_matcher_single_hidden_layer(args):
     input_channels = args.input_channels
     num_classes = args.num_classes
@@ -160,7 +161,7 @@ def template_matcher_single_hidden_layer(args):
     
     ks = args.kernel_size
     # Block layers.
-    for layer_num in range(args.block_layers):
+    for layer_num in range(args.block_layers-1):
         y = Conv2D(feats, ks, padding='same', use_bias=use_bias)(y)
         y = LeakyRELU(args.lrelu_alpha)(y)
         y = Dropout(args.dropout_rate)(y)
@@ -1242,34 +1243,54 @@ def build_simple_hourglass(args):
     model_save_path=args.model_save_path
     use_bias = args.use_bias
     conv=Conv2D #conv=SeparableConv2D
+    
+    # Input Layer
     x = inputs = Input(shape = (None, None, input_channels))
     x = Conv2D(init_feats, args.initial_kernel_size, activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
-    x = BatchNormalization()(x)
-    x = LeakyRELU(alpha=0.05)(x)
-    nf = init_feats
-    for layer in range(ds):
-        x = conv(nf, ks[1+layer], padding='same', strides=(1,1), use_bias=use_bias)(x)
-        x = LeakyRELU(alpha=0.05)(x)
+    if args.batch_normalization:
         x = BatchNormalization()(x)
+    x = LeakyRELU(alpha=args.lrelu_alpha)(x)
+    
+    nf = init_feats
+    # Downsampling blocks.
+    for layer in range(ds):
+        for blocklayer in range(args.layers_per_block):
+            x = conv(nf, args.kernel_size, padding='same', strides=(1,1), use_bias=use_bias)(x)
+            x = LeakyRELU(alpha=args.lrelu_alpha)(x)
+            x = Dropout(dropout_rate)(x)
+            if args.batch_normalization:
+                x = BatchNormalization()(x)
         x = MaxPooling2D(pool_size=(2,2), strides=(2,2))(x) #AveragePooling2D
+        if args.feature_growth_type == 'add':
+            nf += feature_growth_rate#+= feature_growth_rate
+        else:
+            nf *= feature_growth_rate
+    # Middle block.
+    for blocklayer in range(args.layers_per_block):
+        x = conv(nf, args.kernel_size, padding='same', use_bias=use_bias)(x)
+        x = LeakyRELU(alpha=args.lrelu_alpha)(x)
         x = Dropout(dropout_rate)(x)
-        nf +=feature_growth_rate#+= feature_growth_rate
-    x = conv(nf, ks[1+layer], padding='same', use_bias=use_bias)(x)
-    x = LeakyRELU(alpha=0.05)(x)
-    x = BatchNormalization()(x)
+        if args.batch_normalization:
+            x = BatchNormalization()(x)
+            
+    # Upsampling layers.
     for layer in range(ds):
         x = UpSampling2D(size=(2, 2))(x)
         x = conv(nf, (5,5), padding='same', use_bias=use_bias)(x)
-        x = BatchNormalization()(x)
+        x = LeakyRELU(alpha=args.lrelu_alpha)(x)
+        if args.batch_normalization:
+            x = BatchNormalization()(x)
         #x = Conv2DTranspose(nf, (5,5), strides=(2,2), padding='same')(x)
-        x = LeakyRELU(alpha=0.05)(x)
-        nf -=feature_growth_rate#-= feature_growth_rate
+        if args.feature_growth_type == 'add':
+            nf -=args.upsampling_path_growth_rate
+        else:
+            nf /=args.upsampling_path_growth_rate
+    
+    # Final Classification Layer.
     x = Conv2D(num_classes, (1,1), padding='same', use_bias=False, activation='sigmoid')(x)
-    #x = Dropout(dropout_rate)(x)
-    #x = LeakyRELU(alpha=0.00)(x)
 
     model = Model(inputs, x)
-    model.compile(loss=loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=lr)) #'nadam' #'adadelta')
+    model.compile(loss=loss, metrics=['accuracy'], optimizer=keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5)) #'nadam' #'adadelta')
 
     try:
         if os.path.exists(model_save_path):
