@@ -18,6 +18,8 @@ import re
 from joblib import Parallel, delayed
 from utils import _mkdir
 
+from visuals.visuals import vis_img as show
+
 def get_lines_and_masks(linechunk):
     yxs = np.zeros((len(linechunk),2),dtype=np.uint16)
     for i, line in enumerate(linechunk):
@@ -456,7 +458,41 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
             predmaxes = np.median(predmaxes, axis=-1)
         else:
             print("Performing inference...")
-            pred = model.predict(image, batch_size=1)#[0]
+            try:
+                pred = model.predict(image, batch_size=1)#[0]
+            except tf.errors.ResourceExhaustedError as ex:
+                print("Validation threw Out of Memory Error", ex)
+                # Now try chunking and stitching the image for better inference.
+                # Send image chunks in instead.
+                size = 1024
+                stride = 512
+                batch_size = 1
+                pred = None
+                while True:
+                    print("Performing chunked inference at size", size, "with stride", stride)
+                    try:
+                        for x in range(0, image.shape[2]-size, stride):
+                            for y in range(0, image.shape[1]-size, stride):
+                                imchunk = image[:, y:y+size, x:x+size, :]
+                                yx,xs = imchunk.shape[1:3]
+                                xd = size-imchunk.shape[2]
+                                yd = size-imchunk.shape[1]
+                                if xd > 0 or yd > 0:
+                                    imchunk = np.pad(imchunk, ((0,0), (0,yd), (0,xd), (0,0)), mode='constant', constant_values=0)
+                                p = model.predict(imchunk, batch_size=batch_size)
+                                if pred is None:
+                                    pred = np.zeros((image.shape[0], image.shape[1], image.shape[2], p.shape[-1]))
+                                pred[0, y+stride/2:y+size-stride/2, x+stride/2:x+size-stride/2, :] = p[0, stride/2:size-stride/2, stride/2:size-stride/2, :]
+                    except tf.errors.ResourceExhaustedError as ex:
+                        print("Still getting OOM Error on chunked inference. Halving chunk dimensions...")
+                        size /= 2
+                        stride /= 2
+                        if size < 64:
+                            print("Context too small for realistic inference. Aborting...")
+                            exit(-1)
+                    break
+                
+                
             print("Image shape:", image.shape)
             print("Pred shape:", pred.shape)
             # TODO retrieve GT mask.
@@ -482,6 +518,10 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
             predsrgbchannels = preds[:int(orig_image_shape[0]*testscale), :int(orig_image_shape[1]*testscale)]
             predsrgbchannels = multihot_to_multiindexed_rgb(predsrgbchannels)
             cv2.imwrite(im_path.replace(test_folder, output_folder) + "_predsrgbchannels.png", predsrgbchannels)
+
+        predshow = show(preds, bgr=False)
+        if output_folder is not None:
+            cv2.imwrite(os.path.join(output_folder, basename + "-Pred.png"), predshow*255)
 
         write_predictions_to_pnglayers(preds, output_folder, basename)
 
