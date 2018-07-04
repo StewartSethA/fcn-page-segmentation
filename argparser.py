@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument('--min_height_scale', type=float, default=0.25, metavar='N', help='Minimum scaling coefficient on training samples (Legacy batcher only)')
     parser.add_argument('--max_height_scale', type=float, default=4.0, metavar='N', help='Maximum scaling coefficient on training samples (Legacy batcher only)')
 
-    parser.add_argument('--epochs', type=int, default=40, metavar='N', help='number of epochs to train (default: 40)')
+    parser.add_argument('--epochs', type=int, default=20, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--steps_per_epoch', type=int, default=1000, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',help='learning rate (default: 0.01)')
 
