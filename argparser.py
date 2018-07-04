@@ -4,8 +4,8 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Semantic Segmentation Trainer')
-    parser.add_argument('--training_folder')
-    parser.add_argument('--validation_folder')
+    parser.add_argument('--training_folder', default="./")
+    parser.add_argument('--validation_folder', default="./")
     parser.add_argument('--test_folder', nargs="?", default="")
     parser.add_argument('--framework', type=str, default="tensorflow", help="Deep learning framework to use for model and training. Options: keras, tensorflow (Default: tensorflow)")
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -16,6 +16,7 @@ def parse_args():
 
     # Training parameters.
     parser.add_argument('--num_classes', type=int, default=5, metavar='N', help='number of classes (default: 4)')
+    parser.add_argument('--input_channels', type=int, default=3)
 
     # Batch size is small for a low-memory GPU. It can be increased,
     # but generally smaller batch sizes lead to faster convergence
@@ -45,16 +46,21 @@ def parse_args():
 
     # Model parameters.
     parser.add_argument('--model_type', type=str, default="hourglass", metavar='N', help='model type: can be hourglass, densenet, tensmeyer, resnet, dilatednet, cylindricalresnet')
+    parser.add_argument('--initial_kernel_size', type=int, default=3)
+    parser.add_argument('--kernel_size', type=int, default=3)
     parser.add_argument('--block_layers', type=int, default=4, metavar='N', help='number of block layers with downsampling (default: 5)')
     parser.add_argument('--layers_per_block', type=int, default=4, metavar='N', help='number of layers per block (default: 3)')
     parser.add_argument('--initial_features_per_block', type=int, default=8, metavar='N', help='initial number of features per block (default: 8)')
     parser.add_argument('--feature_growth_rate', type=int, default=16, metavar='N', help='feature growth rate per layer within a block (default: 4)')
+    parser.add_argument('--feature_growth_type', type=str, default="add", help='type of feature growth. Can be add or multiply.')
     parser.add_argument('--upsampling_path_initial_features', type=int, default=24, metavar='N', help='initial number of features per upsampling block (default: 20)')
     parser.add_argument('--upsampling_path_growth_rate', type=int, default=2, metavar='N', help='feature growth rate per upsampling layer within a block (default: 4)')
     parser.add_argument('--bottleneck_feats', type=int, default=20, metavar='N', help='intial bottleneck features (default: 20)')
     parser.add_argument('--bottleneck_growth_rate', type=int, default=4, metavar='N', help='growth rate of bottleneck features (default: 4)')
     parser.add_argument('--weight_normalization_interval', type=int, default=-1, metavar='N', help='interval, in batches, for weight normalization (UNSTABLE). -1 (default) means never.')
-    parser.add_argument('--dropout_rate', type=float, default=0.9)
+    parser.add_argument('--dropout_rate', type=float, default=0.5)
+    parser.add_argument('--batch_normalization', type=bool, default=True)
+    parser.add_argument('--lrelu_alpha', type=float, default=0.05)
 
     args = parser.parse_args()
     if args.batch_size == -1:
