@@ -147,7 +147,7 @@ def unet(args):
 def template_matcher_single_hidden_layer(args):
     input_channels = args.input_channels
     num_classes = args.num_classes
-    use_bias = args,use_bias
+    use_bias = args.use_bias
     kernel_size = ks = args.initial_kernel_size
     feats = args.initial_features_per_block
 
