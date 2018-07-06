@@ -61,6 +61,7 @@ def parse_args():
     parser.add_argument('--dropout_rate', type=float, default=0.5)
     parser.add_argument('--batch_normalization', type=bool, default=True)
     parser.add_argument('--lrelu_alpha', type=float, default=0.05)
+    parser.add_argument('--use_bias', type=bool, default=False)
 
     args = parser.parse_args()
     if args.batch_size == -1:
