@@ -24,7 +24,7 @@ class LeakyRELU(LeakyReLU):
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from keras.utils.generic_utils import get_custom_objects
-get_custom_objects().update({'LRELU':Activation(LeakyRELU)})
+get_custom_objects().update({'LRELU':LeakyRELU})
 
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -147,7 +147,7 @@ def unet(args):
 def template_matcher_single_hidden_layer(args):
     input_channels = args.input_channels
     num_classes = args.num_classes
-    use_bias = args,use_bias
+    use_bias = args.use_bias
     kernel_size = ks = args.initial_kernel_size
     feats = args.initial_features_per_block
 
@@ -376,7 +376,7 @@ import densenet.densenet_fc as dc
 
 def densenet_tiramisu(args):
     # TODO Configure this!
-    model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=8, nb_layers_per_block=2, upsampling_type='upsampling', classes=args.num_classes)
+    model = dc.DenseNetFCN((None, None, args.input_channels), init_conv_features=args.initial_features_per_block, nb_dense_block=args.block_layers, growth_rate=args.feature_growth_rate, nb_layers_per_block=args.layers_per_block, upsampling_type='upsampling', classes=args.num_classes)
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=4, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     #Following was the original:
