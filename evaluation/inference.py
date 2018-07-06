@@ -460,7 +460,8 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
             print("Performing inference...")
             try:
                 pred = model.predict(image, batch_size=1)#[0]
-            except tf.errors.ResourceExhaustedError as ex:
+                a = 1 / 0
+            except Exception as ex: #tf.errors.ResourceExhaustedError as ex:
                 print("Validation threw Out of Memory Error", ex)
                 # Now try chunking and stitching the image for better inference.
                 # Send image chunks in instead.
@@ -479,10 +480,15 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                                 yd = size-imchunk.shape[1]
                                 if xd > 0 or yd > 0:
                                     imchunk = np.pad(imchunk, ((0,0), (0,yd), (0,xd), (0,0)), mode='constant', constant_values=0)
+                                cv2.imshow('imchunk', imchunk[0])
+                                cv2.waitKey()
                                 p = model.predict(imchunk, batch_size=batch_size)
+                                cv2.imshow('pred', show(p[0], bgr=True))
                                 if pred is None:
                                     pred = np.zeros((image.shape[0], image.shape[1], image.shape[2], p.shape[-1]))
                                 pred[0, y+stride/2:y+size-stride/2, x+stride/2:x+size-stride/2, :] = p[0, stride/2:size-stride/2, stride/2:size-stride/2, :]
+                                cv2.imshow('pred', show(pred[0], bgr=True))
+                                cv2.waitKey()
                     except tf.errors.ResourceExhaustedError as ex:
                         print("Still getting OOM Error on chunked inference. Halving chunk dimensions...")
                         size /= 2
