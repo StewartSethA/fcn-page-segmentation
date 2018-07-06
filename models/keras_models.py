@@ -24,7 +24,7 @@ class LeakyRELU(LeakyReLU):
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from keras.utils.generic_utils import get_custom_objects
-get_custom_objects().update({'LRELU':Activation(LeakyRELU)})
+get_custom_objects().update({'LRELU':LeakyRELU})
 
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
