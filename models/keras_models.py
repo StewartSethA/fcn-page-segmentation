@@ -69,7 +69,7 @@ def unet(args):
                 x = BatchNormalization()(x)
         print("x shape:",x.shape)
         x = Dropout(dropouts[l])(x)
-        if l != args.block_layers-1:
+        if l >= 0: # != args.block_layers-1:
             downsampled.append(x)
             x = MaxPooling2D(pool_size=(2, 2))(x)
         if args.batch_normalization:
