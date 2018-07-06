@@ -77,11 +77,11 @@ def unet(args):
         print("x shape:",x.shape)
         f *= 2
     # Upsampling layers!
-    for l in range(args.block_layers):
+    for l in reversed(range(args.block_layers)):
         f /= 2
         x = UpSampling2D(size = (2,2))(x)
         x = Conv2D(f, 2, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
-        x = merge([downsampled[-l-1], x], mode = 'concat', concat_axis = 3)
+        x = merge([downsampled[l], x], mode = 'concat', concat_axis = 3)
         for bl in range(args.layers_per_block):
             x = Conv2D(f, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
             if args.batch_normalization:
