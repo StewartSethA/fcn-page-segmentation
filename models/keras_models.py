@@ -20,11 +20,11 @@ from keras.backend import spatial_2d_padding as pad2d
 from keras.layers import Conv2D as Conv2D_keras
 class LeakyRELU(LeakyReLU):
     def __init__(self, *args, **kwargs):
-        self.__name__ = "LRELU"
+        self.__name__ = "LeakyRELU"
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from keras.utils.generic_utils import get_custom_objects
-get_custom_objects().update({'LRELU':LeakyRELU})
+get_custom_objects().update({'LeakyRELU':LeakyRELU})
 
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -1378,6 +1378,8 @@ def build_model(args):
         try:
             model = keras.models.load_model(args.load_model_path)
         except Exception as ex:
+            print(ex)
+            print("BUILDING model from args...")
             model = model(args)
             model.load_weights(args.load_model_path, by_name=True)
     else:
