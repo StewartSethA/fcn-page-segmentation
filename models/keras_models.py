@@ -376,7 +376,7 @@ import densenet.densenet_fc as dc
 
 def densenet_tiramisu(args):
     # TODO Configure this!
-    model = dc.DenseNetFCN((None, None, args.input_channels), init_conv_features=args.initial_features_per_block, nb_dense_block=args.block_layers, growth_rate=args.feature_growth_rate, nb_layers_per_block=args.layers_per_block, upsampling_type='upsampling', classes=args.num_classes)
+    model = dc.DenseNetFCN((None, None, args.input_channels), init_conv_filters=args.initial_features_per_block, nb_dense_block=args.block_layers, growth_rate=args.feature_growth_rate, nb_layers_per_block=args.layers_per_block, upsampling_type='upsampling', classes=args.num_classes)
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=3, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     #model = dc.DenseNetFCN((None, None, 3), nb_dense_block=4, growth_rate=16, nb_layers_per_block=3, upsampling_type='upsampling', classes=args.num_classes)
     #Following was the original:
