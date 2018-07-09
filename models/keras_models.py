@@ -117,7 +117,7 @@ def template_matcher_single_hidden_layer(args):
     y = Dropout(args.dropout_rate)(y)
     if args.batch_normalization:
         y = BatchNormalization()(y)
-    
+
     ks = args.kernel_size
     # Block layers.
     for layer_num in range(args.block_layers-1):
@@ -131,7 +131,7 @@ def template_matcher_single_hidden_layer(args):
             feats += args.feature_growth_rate
         else:
             feats *= args.feature_growth_rate
-    
+
     # Classification layer
     y = Conv2D(num_classes, (1,1), padding='same', use_bias=use_bias)(y)
     y = Activation('sigmoid')(y)
@@ -1202,14 +1202,14 @@ def build_simple_hourglass(args):
     model_save_path=args.model_save_path
     use_bias = args.use_bias
     conv=Conv2D #conv=SeparableConv2D
-    
+
     # Input Layer
     x = inputs = Input(shape = (None, None, input_channels))
     x = Conv2D(init_feats, args.initial_kernel_size, activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
     if args.batch_normalization:
         x = BatchNormalization()(x)
     x = LeakyRELU(alpha=args.lrelu_alpha)(x)
-    
+
     nf = init_feats
     # Downsampling blocks.
     for layer in range(ds):
@@ -1231,7 +1231,7 @@ def build_simple_hourglass(args):
         x = Dropout(dropout_rate)(x)
         if args.batch_normalization:
             x = BatchNormalization()(x)
-            
+
     # Upsampling layers.
     for layer in range(ds):
         x = UpSampling2D(size=(2, 2))(x)
@@ -1244,7 +1244,7 @@ def build_simple_hourglass(args):
             nf -=args.upsampling_path_growth_rate
         else:
             nf /=args.upsampling_path_growth_rate
-    
+
     # Final Classification Layer.
     x = Conv2D(num_classes, (1,1), padding='same', use_bias=False, activation='sigmoid')(x)
 
@@ -1321,15 +1321,10 @@ def build_model(args):
             break
         except:
             mem_fraction *= 0.75
-    
+
     model_type = args.model_type
     num_classes = args.num_classes
 
-    import sys
-    current_module = sys.modules[__name__]
-    model = getattr(current_module, model_type)
-    print("Importing model type named", model_type)
-    
     #model = model(args)
     if os.path.exists(args.load_model_path):
         print("Loading existing model weights...", args.load_model_path, "With inferred number of classes", args.num_classes)
@@ -1339,10 +1334,19 @@ def build_model(args):
         except Exception as ex:
             print(ex)
             print("BUILDING model from args...")
+
+            import sys
+            current_module = sys.modules[__name__]
+            model = getattr(current_module, model_type)
+            print("Importing model type named", model_type)
             model = model(args)
             model.load_weights(args.load_model_path, by_name=True)
     else:
+        import sys
+        current_module = sys.modules[__name__]
+        model = getattr(current_module, model_type)
+        print("Importing model type named", model_type)
         model = model(args)
         print("No model by this name exists; creating new model instead...", args.load_model_path)
-            
+
     return model
