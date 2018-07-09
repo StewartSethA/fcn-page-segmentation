@@ -460,40 +460,43 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
             print("Performing inference...")
             try:
                 pred = model.predict(image, batch_size=1)#[0]
-                a = 1 / 0
-            except Exception as ex: #tf.errors.ResourceExhaustedError as ex:
+            except tf.errors.ResourceExhaustedError as ex:
                 print("Validation threw Out of Memory Error", ex)
                 # Now try chunking and stitching the image for better inference.
                 # Send image chunks in instead.
-                size = 1024
-                stride = 512
+                size = max(image.shape[1], image.shape[2]) / 2 + 2
+                stride = size / 2
                 batch_size = 1
                 pred = None
                 while True:
                     print("Performing chunked inference at size", size, "with stride", stride)
                     try:
-                        for x in range(0, image.shape[2]-size, stride):
-                            for y in range(0, image.shape[1]-size, stride):
+                        for x in range(0, image.shape[2]-size+stride/2, stride):
+                            for y in range(0, image.shape[1]-size+stride/2, stride):
                                 imchunk = image[:, y:y+size, x:x+size, :]
                                 yx,xs = imchunk.shape[1:3]
                                 xd = size-imchunk.shape[2]
                                 yd = size-imchunk.shape[1]
                                 if xd > 0 or yd > 0:
                                     imchunk = np.pad(imchunk, ((0,0), (0,yd), (0,xd), (0,0)), mode='constant', constant_values=0)
-                                cv2.imshow('imchunk', imchunk[0])
-                                cv2.waitKey()
+                                #cv2.imshow('imchunk', imchunk[0])
+                                #cv2.waitKey()
                                 p = model.predict(imchunk, batch_size=batch_size)
-                                cv2.imshow('pred', show(p[0], bgr=True))
+                                #cv2.imshow('p', show(p[0], bgr=True))
                                 if pred is None:
                                     pred = np.zeros((image.shape[0], image.shape[1], image.shape[2], p.shape[-1]))
-                                pred[0, y+stride/2:y+size-stride/2, x+stride/2:x+size-stride/2, :] = p[0, stride/2:size-stride/2, stride/2:size-stride/2, :]
-                                cv2.imshow('pred', show(pred[0], bgr=True))
-                                cv2.waitKey()
+                                u = stride/2 if y > 0 else 0
+                                l = stride/2 if x > 0 else 0
+                                b = size-stride/2 if y+size < image.shape[1] else image.shape[1]-y
+                                r = size-stride/2 if x+size < image.shape[2] else image.shape[2]-x
+                                pred[0, y+u:y+b, x+l:x+r, :] = p[0, u:b, l:r, :]
+                                #cv2.imshow('pred', show(pred[0], bgr=True))
+                                #cv2.waitKey()
                     except tf.errors.ResourceExhaustedError as ex:
                         print("Still getting OOM Error on chunked inference. Halving chunk dimensions...")
-                        size /= 2
-                        stride /= 2
-                        if size < 64:
+                        size = size / 2 + 1
+                        stride = size * 2
+                        if size < 16:
                             print("Context too small for realistic inference. Aborting...")
                             exit(-1)
                     break

@@ -3,7 +3,6 @@ import numpy as np
 from nn_utils import model_size
 import keras
 import keras.backend as K
-
 from keras.models import Sequential
 from keras.layers import Dropout, Activation, LeakyReLU, Layer, SeparableConv2D, Conv2DTranspose
 from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D, GlobalAveragePooling2D, Conv2DTranspose, SeparableConv2D
@@ -20,11 +19,11 @@ from keras.backend import spatial_2d_padding as pad2d
 from keras.layers import Conv2D as Conv2D_keras
 class LeakyRELU(LeakyReLU):
     def __init__(self, *args, **kwargs):
-        self.__name__ = "LRELU"
+        self.__name__ = "LeakyRELU"
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from keras.utils.generic_utils import get_custom_objects
-get_custom_objects().update({'LRELU':LeakyRELU})
+get_custom_objects().update({'LeakyRELU':LeakyRELU})
 
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -59,83 +58,43 @@ def conv_cylinder(feats, ks=3, nonlinearity=reluclip):
 def unet(args):
     num_classes = args.num_classes
     initial_feats = f = args.initial_features_per_block #4 #8 #16 # Original batch was 32
-    inputs = Input((None, None, 3))
-    conv1 = Conv2D(f, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(inputs)
-    #conv1 = BatchNormalization()(conv1)
-    print("conv1 shape:",conv1.shape)
-    conv1 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv1)
-    print("conv1 shape:",conv1.shape)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-    pool1 = BatchNormalization()(pool1)
-    print("pool1 shape:",pool1.shape)
-
-    conv2 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool1)
-    #conv2 = BatchNormalization()(conv2)
-    print("conv2 shape:",conv2.shape)
-    conv2 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv2)
-    print("conv2 shape:",conv2.shape)
-    #conv2 = Dropout(0.15)(conv2)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-    pool2 = BatchNormalization()(pool2)
-    print("pool2 shape:",pool2.shape)
-
-    conv3 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool2)
-    #conv3 = BatchNormalization()(conv3)
-    print("conv3 shape:",conv3.shape)
-    conv3 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv3)
-    print("conv3 shape:",conv3.shape)
-    conv3 = Dropout(0.15)(conv3)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-    pool3 = BatchNormalization()(pool3)
-    print("pool3 shape:",pool3.shape)
-
-    conv4 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool3)
-    #conv4 = BatchNormalization()(conv4)
-    conv4 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv4)
-    drop4 = Dropout(0.5)(conv4)
-    pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
-    pool4 = BatchNormalization()(pool4)
-
-    conv5 = Conv2D(f*16, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(pool4)
-    #conv5 = BatchNormalization()(conv5)
-    conv5 = Conv2D(f*16, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv5)
-    drop5 = Dropout(0.5)(conv5)
-    drop5 = BatchNormalization()(drop5)
-
-    up6 = Conv2D(f*8, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(drop5))
-    merge6 = merge([drop4,up6], mode = 'concat', concat_axis = 3)
-    conv6 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge6)
-    #conv6 = BatchNormalization()(conv6)
-    conv6 = Conv2D(f*8, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv6)
-    conv6 = BatchNormalization()(conv6)
-
-    up7 = Conv2D(f*4, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv6))
-    merge7 = merge([conv3,up7], mode = 'concat', concat_axis = 3)
-    conv7 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge7)
-    #conv7 = BatchNormalization()(conv7)
-    conv7 = Conv2D(f*4, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv7)
-    conv7 = BatchNormalization()(conv7)
-
-    up8 = Conv2D(f*2, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv7))
-    merge8 = merge([conv2,up8], mode = 'concat', concat_axis = 3)
-    conv8 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge8)
-    #conv8 = BatchNormalization()(conv8)
-    conv8 = Conv2D(f*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv8)
-    conv8 = BatchNormalization()(conv8)
-
-    up9 = Conv2D(f, 2, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(UpSampling2D(size = (2,2))(conv8))
-    merge9 = merge([conv1,up9], mode = 'concat', concat_axis = 3)
-    conv9 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(merge9)
-    #conv9 = BatchNormalization()(conv9)
-    conv9 = Conv2D(f, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
-    #conv9 = BatchNormalization()(conv9)
-    conv9 = Conv2D(num_classes*2, 3, activation = LeakyRELU(0.05), padding = 'same', kernel_initializer = 'he_normal', use_bias=False)(conv9)
-    conv9 = BatchNormalization()(conv9)
-    conv10 = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=False)(conv9)
+    inputs = Input((None, None, args.input_channels))
+    dropouts = [0, 0.15, 0.15, 0.5, 0.5, 0.5, 0.5, 0.5]
+    x = inputs
+    downsampled = []
+    for l in range(args.block_layers):
+        for bl in range(args.layers_per_block):
+            x = Conv2D(f, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            if args.batch_normalization:
+                x = BatchNormalization()(x)
+        print("x shape:",x.shape)
+        x = Dropout(dropouts[l])(x)
+        if l >= 0: # != args.block_layers-1:
+            downsampled.append(x)
+            x = MaxPooling2D(pool_size=(2, 2))(x)
+        if args.batch_normalization:
+            x = BatchNormalization()(x)
+        print("x shape:",x.shape)
+        f *= 2
+    # Upsampling layers!
+    for l in reversed(range(args.block_layers)):
+        f /= 2
+        x = UpSampling2D(size = (2,2))(x)
+        x = Conv2D(f, 2, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+        x = merge([downsampled[l], x], mode = 'concat', concat_axis = 3)
+        for bl in range(args.layers_per_block):
+            x = Conv2D(f, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            if args.batch_normalization:
+                x = BatchNormalization()(x)
+    # Classification layers.
+    x = Conv2D(num_classes*2, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+    if args.batch_normalization:
+        x = BatchNormalization()(x)
+    x = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=args.use_bias)(x)
     #conv10 = Lambda(lambda x:x*10)(conv10)
     #conv10 = Lambda(function=reluclip)(conv10)
 
-    model = Model(input = inputs, output = conv10)
+    model = Model(input = inputs, output = x)
 
     model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss, args), metrics = ['accuracy'])
 
@@ -1378,6 +1337,8 @@ def build_model(args):
         try:
             model = keras.models.load_model(args.load_model_path)
         except Exception as ex:
+            print(ex)
+            print("BUILDING model from args...")
             model = model(args)
             model.load_weights(args.load_model_path, by_name=True)
     else:
