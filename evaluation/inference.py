@@ -490,16 +490,17 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                                 b = size-stride/2 if y+size < image.shape[1] else image.shape[1]-y
                                 r = size-stride/2 if x+size < image.shape[2] else image.shape[2]-x
                                 pred[0, y+u:y+b, x+l:x+r, :] = p[0, u:b, l:r, :]
+                                
                                 #cv2.imshow('pred', show(pred[0], bgr=True))
                                 #cv2.waitKey()
+                        break
                     except tf.errors.ResourceExhaustedError as ex:
                         print("Still getting OOM Error on chunked inference. Halving chunk dimensions...")
                         size = size / 2 + 1
-                        stride = size * 2
+                        stride = size / 2
                         if size < 16:
                             print("Context too small for realistic inference. Aborting...")
                             exit(-1)
-                    break
                 
                 
             print("Image shape:", image.shape)
