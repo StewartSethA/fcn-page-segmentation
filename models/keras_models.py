@@ -24,9 +24,13 @@ class LeakyRELU(LeakyReLU):
         self.__name__ = "LeakyRELU"
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
+def adv_relu(x):
+    return K.relu(x, max_value=1.0)
+        
 from keras.utils.generic_utils import get_custom_objects
 #get_custom_objects().update({'LeakyRELU':LeakyRELU})
 get_custom_objects().update({'LeakyRELU':LeakyReLU})
+get_custom_objects().update({'adv_relu':adv_relu})
 
 LeakyRELU = LeakyReLU
 
