@@ -17,6 +17,8 @@ from losses import *
 from metrics import *
 from keras.backend import spatial_2d_padding as pad2d
 from keras.layers import Conv2D as Conv2D_keras
+
+from keras.layers import LeakyReLU
 class LeakyRELU(LeakyReLU):
     def __init__(self, *args, **kwargs):
         self.__name__ = "LeakyRELU"
