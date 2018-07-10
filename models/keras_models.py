@@ -23,7 +23,10 @@ class LeakyRELU(LeakyReLU):
         super(LeakyRELU, self).__init__(*args, **kwargs)
 
 from keras.utils.generic_utils import get_custom_objects
-get_custom_objects().update({'LeakyRELU':LeakyRELU})
+#get_custom_objects().update({'LeakyRELU':LeakyRELU})
+get_custom_objects().update({'LeakyRELU':LeakyReLU})
+
+LeakyRELU = LeakyReLU
 
 import os
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -64,7 +67,8 @@ def unet(args):
     downsampled = []
     for l in range(args.block_layers):
         for bl in range(args.layers_per_block):
-            x = Conv2D(f, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            x = Conv2D(f, args.kernel_size, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            x = LeakyReLU(args.lrelu_alpha)(x)
             if args.batch_normalization:
                 x = BatchNormalization()(x)
         print("x shape:",x.shape)
@@ -80,14 +84,17 @@ def unet(args):
     for l in reversed(range(args.block_layers)):
         f /= 2
         x = UpSampling2D(size = (2,2))(x)
-        x = Conv2D(f, 2, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+        x = Conv2D(f, 2, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+        x = LeakyReLU(args.lrelu_alpha)(x)
         x = merge([downsampled[l], x], mode = 'concat', concat_axis = 3)
         for bl in range(args.layers_per_block):
-            x = Conv2D(f, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            x = Conv2D(f, args.kernel_size, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            x = LeakyReLU(args.lrelu_alpha)(x)
             if args.batch_normalization:
                 x = BatchNormalization()(x)
     # Classification layers.
-    x = Conv2D(num_classes*2, args.kernel_size, activation = LeakyRELU(args.lrelu_alpha), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+    x = Conv2D(num_classes*2, args.kernel_size, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+    x = LeakyReLU(args.lrelu_alpha)(x)
     if args.batch_normalization:
         x = BatchNormalization()(x)
     x = Conv2D(num_classes, 1, activation = 'sigmoid', use_bias=args.use_bias)(x)
@@ -96,7 +103,8 @@ def unet(args):
 
     model = Model(input = inputs, output = x)
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss, args), metrics = ['accuracy'])
+    #model.compile(optimizer = Adam(lr = 1e-4), loss = lookup_loss(args.loss, args), metrics = ['accuracy'])
+    model.compile(optimizer = keras.optimizers.Nadam(lr=args.lr, clipvalue=0.5), loss = lookup_loss(args.loss, args), metrics = ['accuracy'])
 
     return model
 
@@ -112,8 +120,8 @@ def template_matcher_single_hidden_layer(args):
 
     # Input layer
     y = model_inputs = Input(shape=(None, None, input_channels))
-    y = Conv2D(args.initial_features_per_block, args.initial_kernel_size, padding='same', use_bias=use_bias)(y)
-    y = LeakyRELU(args.lrelu_alpha)(y)
+    y = Conv2D(args.initial_features_per_block, args.initial_kernel_size, kernel_initializer='he_normal', padding='same', use_bias=use_bias)(y)
+    y = LeakyReLU(args.lrelu_alpha)(y)
     y = Dropout(args.dropout_rate)(y)
     if args.batch_normalization:
         y = BatchNormalization()(y)
@@ -121,8 +129,8 @@ def template_matcher_single_hidden_layer(args):
     ks = args.kernel_size
     # Block layers.
     for layer_num in range(args.block_layers-1):
-        y = Conv2D(feats, ks, padding='same', use_bias=use_bias)(y)
-        y = LeakyRELU(args.lrelu_alpha)(y)
+        y = Conv2D(feats, ks, padding='same', kernel_initializer='he_normal', use_bias=use_bias)(y)
+        y = LeakyReLU(args.lrelu_alpha)(y)
         y = Dropout(args.dropout_rate)(y)
         if args.batch_normalization:
             y = BatchNormalization()(y)
@@ -1205,7 +1213,7 @@ def build_simple_hourglass(args):
 
     # Input Layer
     x = inputs = Input(shape = (None, None, input_channels))
-    x = Conv2D(init_feats, args.initial_kernel_size, activation='linear', padding='same', use_bias=False, name='conv1_1')(x)
+    x = Conv2D(init_feats, args.initial_kernel_size, activation='linear', kernel_initializer='he_normal', padding='same', use_bias=False, name='conv1_1')(x)
     if args.batch_normalization:
         x = BatchNormalization()(x)
     x = LeakyRELU(alpha=args.lrelu_alpha)(x)
@@ -1214,7 +1222,7 @@ def build_simple_hourglass(args):
     # Downsampling blocks.
     for layer in range(ds):
         for blocklayer in range(args.layers_per_block):
-            x = conv(nf, args.kernel_size, padding='same', strides=(1,1), use_bias=use_bias)(x)
+            x = conv(nf, args.kernel_size, padding='same', kernel_initializer='he_normal', strides=(1,1), use_bias=use_bias)(x)
             x = LeakyRELU(alpha=args.lrelu_alpha)(x)
             x = Dropout(dropout_rate)(x)
             if args.batch_normalization:
@@ -1226,7 +1234,7 @@ def build_simple_hourglass(args):
             nf *= feature_growth_rate
     # Middle block.
     for blocklayer in range(args.layers_per_block):
-        x = conv(nf, args.kernel_size, padding='same', use_bias=use_bias)(x)
+        x = conv(nf, args.kernel_size, padding='same', kernel_initializer='he_normal', use_bias=use_bias)(x)
         x = LeakyRELU(alpha=args.lrelu_alpha)(x)
         x = Dropout(dropout_rate)(x)
         if args.batch_normalization:
@@ -1235,7 +1243,7 @@ def build_simple_hourglass(args):
     # Upsampling layers.
     for layer in range(ds):
         x = UpSampling2D(size=(2, 2))(x)
-        x = conv(nf, (5,5), padding='same', use_bias=use_bias)(x)
+        x = conv(nf, (5,5), padding='same', kernel_initializer='he_normal', use_bias=use_bias)(x)
         x = LeakyRELU(alpha=args.lrelu_alpha)(x)
         if args.batch_normalization:
             x = BatchNormalization()(x)
@@ -1327,10 +1335,11 @@ def build_model(args):
 
     #model = model(args)
     if os.path.exists(args.load_model_path):
-        print("Loading existing model weights...", args.load_model_path, "With inferred number of classes", args.num_classes)
+        print("Loading existing model...", args.load_model_path, "With inferred number of classes", args.num_classes)
         # TODO: Get model loading without matching code working!
         try:
             model = keras.models.load_model(args.load_model_path)
+            args.num_classes = model.layers[-1].output_shape[-1]
         except Exception as ex:
             print(ex)
             print("BUILDING model from args...")
@@ -1348,5 +1357,5 @@ def build_model(args):
         print("Importing model type named", model_type)
         model = model(args)
         print("No model by this name exists; creating new model instead...", args.load_model_path)
-
+    model.save('new_model.h5')
     return model
