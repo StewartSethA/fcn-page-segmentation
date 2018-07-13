@@ -4,22 +4,22 @@ base=$1
 # NEW! Trying out different models...
 
 for dataset in Barrett; do
-    base_folder=/home/ubuntu/workspace/fcn-page-segmentation/data/
+    base_folder=`pwd`/data/
     for train_instance in A; do #B C A; do
         for model_type in unet; do # densenet_tiramisu template_matcher_single_hidden_layer unet build_model_functional build_model_functional_old; do
         
-          for block_layers in 5 6 4 3 2; do #2 3 4 5; do
-          for layers_per_block in 3 2 1; do
-          for initial_features_per_block in 64 32 16; do # 16 32 64; do
+          for block_layers in 4 5 6 3 2; do #2 3 4 5; do
+          for layers_per_block in 2 1 3; do
+          for initial_features_per_block in 32 64 16; do # 16 32 64; do
           if [ $block_layers -ge 5 ] && [ $initial_features_per_block -gt 32 ]; then
           continue
           fi
 	  #if [ $block_layers -ne 4 ] && [ $initial_features_per_block -ne 16 ]; then
       #    continue
 	  #fi
-          if [ $initial_features_per_block -ne 64 ] && [ $layers_per_block -ne 2 ]; then
-          continue
-          fi
+          #if [ $initial_features_per_block -ne 64 ] && [ $layers_per_block -ne 2 ]; then
+          #continue
+          #fi
           train_folder="${base_folder}/${dataset}/$train_instance"
 
           echo "Training ${train_folder}..."
