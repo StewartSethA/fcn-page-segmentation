@@ -39,8 +39,9 @@ for dataset in Barrett; do
           continue
           fi
           train_folder="${base_folder}/${dataset}/$train_instance"
+          test_folder="${base_folder}/${dataset}/not$train_instance"
 
-          echo "Training ${train_folder}..."
+          echo "Validating ${test_folder}..."
           experiment_name="${dataset}${train_instance}_${model_type}_${block_layers}_${layers_per_block}_${initial_features_per_block}_${initial_kernel_size}_${feature_growth_rate}_${feature_growth_type}"
           expfolder="experiments/${dataset}/${experiment_name}"
           mkdir -p $expfolder
@@ -48,7 +49,12 @@ for dataset in Barrett; do
           echo "Using training model ${model_path}..."
           lr=0.001
           
-          python train.py --training_folder ${train_folder} --validation_folder ${train_folder} --log_dir ${expfolder} --lr $lr --framework keras --batcher legacy --model_type $model_type --loss mse --block_layers $block_layers --layers_per_block $layers_per_block --initial_features_per_block $initial_features_per_block --initial_kernel_size $initial_kernel_size --feature_growth_rate $feature_growth_rate --feature_growth_type $feature_growth_type | tee ${expfolder}/training.log
+          #python train.py --training_folder ${train_folder} --validation_folder ${train_folder} --log_dir ${expfolder} --lr $lr --framework keras --batcher legacy --model_type $model_type --loss mse --block_layers $block_layers --layers_per_block $layers_per_block --initial_features_per_block $initial_features_per_block --initial_kernel_size $initial_kernel_size --feature_growth_rate $feature_growth_rate --feature_growth_type $feature_growth_type | tee ${expfolder}/training.log
+          
+          mkdir -p ${expfolder}/$dataset/not$train_instance/
+          # Now validate against the NOT dataset.
+          python validate.py --training_folder ${train_folder} --validation_folder ${train_folder} --test_folder ${test_folder} --log_dir ${expfolder}/$dataset/not$train_instance/ --output_folder ${expfolder}/$dataset/not$train_instance/  --lr $lr --framework keras --batcher legacy --model_type $model_type --load_model_path ${expfolder}/model_checkpoint.h5 --loss mse --num_classes 6 --predthresholds 0.5,0.5,0.5,0.5,0.5,1.0 --num_classes 5 | tee ${expfolder}/$dataset/not$train_instance/validation.log
+          
           
           # --loss_weights byclass
           if [ ${PIPESTATUS[0]} != 0 ]; then
