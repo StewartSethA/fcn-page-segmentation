@@ -303,6 +303,15 @@ class CachedMetrics(dict):
     def weighted_f1_score(self):
         return 2 * self["weighted_precision"] * self["weighted_recall"] / np.maximum(self["weighted_precision"] + self["weighted_recall"], self.eps)
 
+    # TODO
+    def border_error_proportion(self):
+        pass
+        # Erode and then dilate the per-class diff
+        # Count the errors before and after.
+        # Now find: What proportion of errors are border errors?
+        # What proportion are non-border errors?
+        # How does this compare with the confusion matrix, which counts BG and non-BG errors?
+
     # We don't want to have to compute 2^(2C) entries for confusion, since there are
     # this many pairs of unique class presence/absence bitstring pairs to be compared for overlapping classes
     # (which even for small C, is large: for C=5, 2^(2C) = 32x32 = 1024 entries in the confusion matrix.)
@@ -339,6 +348,14 @@ class CachedMetrics(dict):
                 # In the special case that C1 == C2, this is the per-class True Positive Rate.
                 confusion_matrix[c1,c2] = sum_c1c2
         return confusion_matrix
+
+    # Represent the confusion matrix as percentages.
+    def confusion_percent(self):
+        pass
+
+    def clear(self):
+        for k in self.keys():
+            del self[k]
 
 import unittest
 class TestCachedMetrics(unittest.TestCase):

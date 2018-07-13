@@ -425,7 +425,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
         #if testscale != 1.0:
         #    #image = cv2.resize(image, (0,0), fx=1.0/testscale, fy=1.0/testscale)
         #    #image = cv2.resize(image, (0,0), fx=1.0/testscale, fy=1.0/testscale)
-        pad_x, pad_y = get_power_of_two_padding(image, 7)
+        pad_x, pad_y = get_power_of_two_padding(image, 8)
         orig_image_shape = image.shape
         if pad_x != 0 or pad_y != 0:
             image = np.pad(image, [(0,pad_y),(0, pad_x),(0,0)], mode='constant')
@@ -460,11 +460,12 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
             print("Performing inference...")
             try:
                 pred = model.predict(image, batch_size=1)#[0]
-            except tf.errors.ResourceExhaustedError as ex:
+                a = 1/0
+            except Exception as ex: #tf.errors.ResourceExhaustedError as ex:
                 print("Validation threw Out of Memory Error", ex)
                 # Now try chunking and stitching the image for better inference.
                 # Send image chunks in instead.
-                size = max(image.shape[1], image.shape[2]) / 2 + 2
+                size = 224*4 #max(image.shape[1], image.shape[2]) / 2 + 2
                 stride = size / 2
                 batch_size = 1
                 pred = None
@@ -490,7 +491,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                                 b = size-stride/2 if y+size < image.shape[1] else image.shape[1]-y
                                 r = size-stride/2 if x+size < image.shape[2] else image.shape[2]-x
                                 pred[0, y+u:y+b, x+l:x+r, :] = p[0, u:b, l:r, :]
-                                
+
                                 #cv2.imshow('pred', show(pred[0], bgr=True))
                                 #cv2.waitKey()
                         break
@@ -501,8 +502,8 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                         if size < 16:
                             print("Context too small for realistic inference. Aborting...")
                             exit(-1)
-                
-                
+
+
             print("Image shape:", image.shape)
             print("Pred shape:", pred.shape)
             # TODO retrieve GT mask.
