@@ -10,10 +10,11 @@ import models.vanilla_cnn
 from models.nn_utils import *
 
 def model(x_image, class_splits=[], pred_splits=[], keep_prob=0.5, batch_size=64, size=224):
-    if size == 224 or size == 112 and not self.zoning_predictor:
-        return cnn224x224_autoencoder_almostoptim(x_image, sum(class_splits) + sum(pred_splits), keep_prob, batch_size=batch_size, width=size, height=size)
-    elif size == 224 or size > 100:
-        return cnn224x224_autoencoder_regionpred(x_image, sum(class_splits) + sum(pred_splits), keep_prob, batch_size=batch_size, width=size, height=size)
+    return cnn224x224_autoencoder_almostoptim(x_image, sum(class_splits) + sum(pred_splits), keep_prob, batch_size=batch_size, width=size, height=size)
+    #if size == 224 or size == 112 and not self.zoning_predictor:
+    #    return cnn224x224_autoencoder_almostoptim(x_image, sum(class_splits) + sum(pred_splits), keep_prob, batch_size=batch_size, width=size, height=size)
+    #elif size == 224 or size > 100:
+    #    return cnn224x224_autoencoder_regionpred(x_image, sum(class_splits) + sum(pred_splits), keep_prob, batch_size=batch_size, width=size, height=size)
 
 def model28x28_resnet(x_image, class_splits=[], pred_splits=[], keep_prob=0.5):
     #cnn = cnn28x28(x_image, sum(class_splits) + sum(pred_splits), keep_prob)
