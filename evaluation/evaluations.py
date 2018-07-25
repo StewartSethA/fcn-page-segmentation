@@ -52,6 +52,45 @@ def weight_mask(channels, mask):
     masked = np.multiply(ch, mask).transpose(1,2,0)
     return masked
 
+# TODO: Create a soft distance summed by GT with different thresholds...
+def visualize_distance_weighted_errors(outpath, pred, gt):
+    weighted_err_saliency = np.zeros(gt.shape)
+    weighted_err_false_positives = np.zeros(gt.shape)
+    weighted_err_false_negatives = np.zeros(gt.shape)
+    print(gt.shape)
+    for clas in range(gt.shape[-1]):
+        print(clas)
+        # Create an inverse distance map that has higher weights further away from any GT pixels of the specified class
+        gt_layer = gt[:,:,clas]
+        pred_layer = pred[:,:,clas]
+        dist_gt_inv = cv2.distanceTransform(((1.0-gt_layer)*255).astype('uint8'), cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        dist_gt_inv = np.clip(dist_gt_inv, 0, 100)
+        # Now multiply false positive errors by the distance from any pixels of the class. These are the most egregious false positives, since they have no remotely local support, and are therefore not off-by-one or dilation bias errors.
+        fps = np.multiply(np.clip(pred_layer - gt_layer, 0, 1), dist_gt_inv)
+        
+        # Now how about masking false negatives? Use the regular distance map for these. If it's at the core of the stroke and it's missing, penalize it more heavily.
+        # But actually... We still want to preserve thin structures, and these will be weighted very low.
+        # What is the right thing to do?
+        # It could just make the most sense to weight all pixels equally, but we do still want to penalize border pixels less, so what do we do?
+        # How about just a regular Gaussian blur?
+        # OR better yet, how about an edge-preserving blur? Nah, this isn't as good.
+        # Let's stick with Gaussian.
+        dist_gt = cv2.GaussianBlur(gt_layer, (0,0), 5) #cv2.distanceTransform(((gt_layer)*255).astype('uint8'), cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        dist_gt = cv2.distanceTransform(((gt_layer)*255).astype('uint8'), cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+        fns = np.multiply(np.clip(gt_layer - pred_layer, 0, 1), dist_gt)
+        weighted_err_false_positives[:,:,clas] = fps / max(0.001, np.max(fps))
+        weighted_err_false_negatives[:,:,clas] = fns / max(0.001, np.max(fns))
+        print(np.max(fps), np.max(fns))
+    weighted_err_saliency = weighted_err_false_positives + weighted_err_false_negatives
+    print(np.max(weighted_err_false_positives, axis=(0,1)))
+    print(np.max(weighted_err_false_negatives, axis=(0,1)))
+    print(np.max(weighted_err_saliency, axis=(0,1)))
+    cv2.imwrite(outpath+"_weighted_err_false_positives"+".jpg", vis_img(weighted_err_false_positives, bgr=False)*255)
+    cv2.imwrite(outpath+"_weighted_err_false_negatives"+".jpg", vis_img(weighted_err_false_negatives, bgr=False)*255)
+    cv2.imwrite(outpath+"_weighted_err_saliency"+".jpg", vis_img(weighted_err_saliency, bgr=False)*255)
+    
+        
+
 # Saves visualizations of the GT, predictions, and errors to disk.
 def visualize_errors(outpath, gt, pred, gtthreshold=0.5, predthreshold=0.5):
     cv2.imwrite(outpath+"_gt.png", vis_img(gt, bgr=False)*255)
@@ -68,6 +107,8 @@ def visualize_errors(outpath, gt, pred, gtthreshold=0.5, predthreshold=0.5):
     cv2.imwrite(outpath+"_predgtdiff.jpg", vis_img(pred_gt_diff, bgr=False)*255)
     predthresh_gt_diff=np.abs(predthresh-np.greater(gt, 0.5).astype('float32'))
     cv2.imwrite(outpath+"_predthreshgtdiff"+str(predthreshold)+".jpg", vis_img(predthresh_gt_diff, bgr=False)*255)
+    
+    visualize_distance_weighted_errors(outpath, pred, gt)
 
 class CachedMetrics(dict):
     '''
