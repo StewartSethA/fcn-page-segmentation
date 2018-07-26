@@ -3,7 +3,8 @@ base=$1
 
 # NEW! Trying out different models...
 
-for dataset in Barrett; do
+# Barrett...
+for dataset in Mean; do
     base_folder=/home/ubuntu/workspace/fcn-page-segmentation/data/
     for train_instance in A; do #B C A; do
         for model_type in unet; do # densenet_tiramisu template_matcher_single_hidden_layer unet build_model_functional build_model_functional_old; do
