@@ -2,7 +2,7 @@ experimentsdir=$1
 num_classes=$2
 
 for dataset in Barrett; do
-    base_folder=/home/ubuntu/workspace/fcn-page-segmentation/data/
+    base_folder=`pwd`/data/
     for train_instance in A; do
         for dir in `ls $experimentsdir`; do
           train_folder="${base_folder}/${dataset}/$train_instance"
