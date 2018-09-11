@@ -122,6 +122,10 @@ class ClassImageSampler(object):
         # Build a window that contains it.
         i = np.random.randint(len(x))
         x,y = x[i],y[i]
+
+        # Making samples random to reduce recall bias, favoring precision instead. Uncomment this to bias in favor of precision over recall.
+        if np.random.random() > 0.5:
+            x,y = np.random.randint(0,gt.shape[1]), np.random.randint(0,gt.shape[0])
         x -= subcrop_dim/2
         y -= subcrop_dim/2
         if x + subcrop_dim >= gt.shape[1]:
