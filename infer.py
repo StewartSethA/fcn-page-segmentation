@@ -17,7 +17,7 @@ from data_loaders.gt_loaders import autodiscover_suffix_to_class_map
 def infer(args):
     test_folder = args.test_folder
     print("Test folder", test_folder)
-    suffix_to_class_map = autodiscover_suffix_to_class_map(test_folder, ["jpg", "png", "tif"])
+    suffix_to_class_map = autodiscover_suffix_to_class_map(args.test_folder, ["jpg", "png", "tif"])
     print("Inferred suffix to class map:", suffix_to_class_map)
     if len(suffix_to_class_map) > 0:
         num_classes = len(suffix_to_class_map)

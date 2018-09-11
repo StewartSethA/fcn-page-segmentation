@@ -5,9 +5,9 @@ from collections import defaultdict
 def parse_args():
     parser = argparse.ArgumentParser(description='Semantic Segmentation Trainer')
     parser.add_argument('--training_folder', default="./")
-    parser.add_argument('--validation_folder', default="./")
+    parser.add_argument('--validation_folder', default="")
     parser.add_argument('--test_folder', nargs="?", default="")
-    parser.add_argument('--framework', type=str, default="tensorflow", help="Deep learning framework to use for model and training. Options: keras, tensorflow (Default: tensorflow)")
+    parser.add_argument('--framework', type=str, default="keras", help="Deep learning framework to use for model and training. Options: keras, tensorflow (Default: tensorflow)")
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
     parser.add_argument('--loss', type=str, default="mse", help="Loss function to use (default: categorical_crossentropy)")
     parser.add_argument('--loss_weights', type=str, default="", help="Per-class loss weights, as comma-delimited list of floats. Example: 5,1,.5,.2,.1")
@@ -25,11 +25,11 @@ def parse_args():
     parser.add_argument('--crop_size', type=int, default=224, metavar='M', help='training image crop size (default 128)')
     parser.add_argument('--batcher', type=str, default="legacy", metavar='N', help='Batcher: Enables or disables augmentations. Options are simple (default) and legacy (more augmentations)')
     parser.add_argument('--min_height_scale', type=float, default=0.25, metavar='N', help='Minimum scaling coefficient on training samples (Legacy batcher only)')
-    parser.add_argument('--max_height_scale', type=float, default=4.0, metavar='N', help='Maximum scaling coefficient on training samples (Legacy batcher only)')
+    parser.add_argument('--max_height_scale', type=float, default=1.2, metavar='N', help='Maximum scaling coefficient on training samples (Legacy batcher only)')
 
     parser.add_argument('--epochs', type=int, default=20, metavar='N', help='number of epochs to train (default: 40)')
     parser.add_argument('--steps_per_epoch', type=int, default=1000, metavar='N', help='number of epochs to train (default: 40)')
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',help='learning rate (default: 0.01)')
+    parser.add_argument('--lr', type=float, default=0.002, metavar='LR',help='learning rate (default: 0.01)')
 
     # Model persistence parameters.
     parser.add_argument('--model_save_path', type=str, default="model_checkpoint", metavar='N', help='model save path')
@@ -45,23 +45,24 @@ def parse_args():
     parser.add_argument('--training_sample_visualization_interval', type=int, default=100)
 
     # Model parameters.
-    parser.add_argument('--model_type', type=str, default="hourglass", metavar='N', help='model type: can be hourglass, densenet, tensmeyer, resnet, dilatednet, cylindricalresnet')
+    parser.add_argument('--model_type', type=str, default="unet", metavar='N', help='model type: can be hourglass, densenet, tensmeyer, resnet, dilatednet, cylindricalresnet')
     parser.add_argument('--initial_kernel_size', type=int, default=3)
     parser.add_argument('--kernel_size', type=int, default=3)
-    parser.add_argument('--block_layers', type=int, default=4, metavar='N', help='number of block layers with downsampling (default: 5)')
-    parser.add_argument('--layers_per_block', type=int, default=4, metavar='N', help='number of layers per block (default: 3)')
-    parser.add_argument('--initial_features_per_block', type=int, default=8, metavar='N', help='initial number of features per block (default: 8)')
-    parser.add_argument('--feature_growth_rate', type=int, default=16, metavar='N', help='feature growth rate per layer within a block (default: 4)')
+    parser.add_argument('--block_layers', type=int, default=3, metavar='N', help='number of block layers with downsampling (default: 5)')
+    parser.add_argument('--layers_per_block', type=int, default=1, metavar='N', help='number of layers per block (default: 3)')
+    parser.add_argument('--initial_features_per_block', type=int, default=24, metavar='N', help='initial number of features per block (default: 8)')
+    parser.add_argument('--feature_growth_rate', type=int, default=8, metavar='N', help='feature growth rate per layer within a block (default: 4)')
     parser.add_argument('--feature_growth_type', type=str, default="add", help='type of feature growth. Can be add or multiply.')
     parser.add_argument('--upsampling_path_initial_features', type=int, default=24, metavar='N', help='initial number of features per upsampling block (default: 20)')
     parser.add_argument('--upsampling_path_growth_rate', type=int, default=2, metavar='N', help='feature growth rate per upsampling layer within a block (default: 4)')
     parser.add_argument('--bottleneck_feats', type=int, default=20, metavar='N', help='intial bottleneck features (default: 20)')
     parser.add_argument('--bottleneck_growth_rate', type=int, default=4, metavar='N', help='growth rate of bottleneck features (default: 4)')
     parser.add_argument('--weight_normalization_interval', type=int, default=-1, metavar='N', help='interval, in batches, for weight normalization (UNSTABLE). -1 (default) means never.')
-    parser.add_argument('--dropout_rate', type=float, default=0.5)
+    parser.add_argument('--dropout_rate', type=float, default=0.25)
     parser.add_argument('--batch_normalization', type=bool, default=True)
-    parser.add_argument('--lrelu_alpha', type=float, default=0.05)
+    parser.add_argument('--lrelu_alpha', type=float, default=0.20)
     parser.add_argument('--use_bias', type=bool, default=False)
+    parser.add_argument('--use_cuda', type=bool, default=True)
 
     args = parser.parse_args()
     if args.batch_size == -1:
@@ -80,4 +81,6 @@ def parse_args():
     else:
         args.predthresholds = [float(f) for f in args.predthresholds.split(",")]
         print("Using prediction thresholds:", args.predthresholds)
+    if len(args.validation_folder) == 0:
+        args.validation_folder = args.training_folder
     return args
