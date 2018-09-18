@@ -82,6 +82,22 @@ def visualize_weights(model, screen_height, screen_width, batch_num=0):
             print("Layer weights shape:", l, lws)
     cv2.waitKey(10)
 
+class SaveEveryEpochCallback(Callback):
+    def __init__(self, model, model_save_path, interval=1):
+        self.interval = interval
+        self.model = model
+        if model_save_path[-3:] != ".h5":
+            model_save_path = model_save_path + ".h5"
+        self.model_save_path = model_save_path
+        self.epoch = 0
+    
+    def on_epoch_end(self, epoch, logs={}):
+        if self.epoch % self.interval == 0:
+            print("Saving model at epoch", self.epoch+1, epoch)
+            filepath = self.model_save_path.replace(".h5", "_" + str(self.epoch) + ".h5")
+            self.model.save(filepath)
+        self.epoch = self.epoch + 1
+
 import visuals
 class DisplayTrainingSamplesCallback(Callback):
     def __init__(self, training_generator_class, model=None, interval=10, log_dir=None, dac=None):
