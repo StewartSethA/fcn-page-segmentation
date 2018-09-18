@@ -73,7 +73,22 @@ def unet(args):
     downsampled = []
     for l in range(args.block_layers):
         for bl in range(args.layers_per_block):
-            x = Conv2D(f, args.kernel_size, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            if l == 0 and bl == 0:
+                x = Conv2D(f+8, args.kernel_size, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+            else:
+                #x = Conv2D(f, (9,1), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+                #x = LeakyReLU(args.lrelu_alpha)(x)
+                #if args.batch_normalization:
+                #    x = BatchNormalization()(x)
+                #x = Conv2D(f, (1,9), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+                #x = LeakyReLU(args.lrelu_alpha)(x)
+                #if args.batch_normalization:
+                #    x = BatchNormalization()(x)
+                x = Conv2D(f, args.kernel_size, padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
+                x = LeakyReLU(args.lrelu_alpha)(x)
+                if args.batch_normalization:
+                    x = BatchNormalization()(x)
+            x = Conv2D(f, (1,1), padding = 'same', kernel_initializer = 'he_normal', use_bias=args.use_bias)(x)
             x = LeakyReLU(args.lrelu_alpha)(x)
             if args.batch_normalization:
                 x = BatchNormalization()(x)
@@ -1308,15 +1323,15 @@ def build_model_functional(args):
 
     #num_classes += 1 # TODO: Expand blank to its own class!
 
+import tensorflow as tf
+from regularizers import *
+from losses import *
 def build_model(args):
     print("")
     print("")
     print("")
     print("Building Keras model of type", args.model_type)
     from keras.backend.tensorflow_backend import set_session
-    import tensorflow as tf
-    from regularizers import *
-    from losses import *
     config = tf.ConfigProto()
     #try:
     #    print("Setting GPU memory usage to 90%")

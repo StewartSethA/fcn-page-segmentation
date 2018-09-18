@@ -8,11 +8,11 @@ if not dir_path in sys.path:
 #############################################################
 # Parse command-line arguments.
 from argparser import parse_args
+from models.pytorch_models import build_model
 
 #############################################################
 # Import and configure Deep Learning and visualization frameworks.
 import numpy as np
-import cv2
 import random
 from collections import defaultdict
 import matplotlib.pyplot as plt

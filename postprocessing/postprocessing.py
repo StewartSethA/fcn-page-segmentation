@@ -67,7 +67,8 @@ def postprocess_preds(batch_x, preds, gt=None, gt_mask=None, pixel_counts_byclas
     #argmax_preds = np.argmax(preds, axis=-1)
     preds = preds_orig
     #thresh = defaultdict(lambda:0.9)
-    print("Postprocessing using thresholds:", thresh)
+    if len(thresh) > 0:
+        print("Postprocessing using thresholds:", thresh)
     # Rather than do arg-maxing, threshold the array.
     if type(thresh) == float:
         preds[preds < thresh] = 0.0

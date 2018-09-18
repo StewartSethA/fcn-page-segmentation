@@ -156,9 +156,9 @@ class DisplayTrainingSamplesCallback(Callback):
                     gt = np.reshape(gt, (1, gt.shape[0], gt.shape[1], gt.shape[2]))
                     preds = preds.astype('float32')
                     print("GT shape:", gt.shape, "Preds shape:", preds.shape)
+                    print("Computing TRAINING F1-scores, precisions, recalls, etc.!")
                     for thresh in np.arange(step,1.0,step):
                         predsthresh = postprocess_preds(im, preds, gt, None, None, thresh=defaultdict(lambda:thresh))
-                        print("Computing TRAINING F1-scores, precisions, recalls, etc.!")
                         cm = CachedMetrics(gt[0], predsthresh[0])
                         precisions, recalls, accuracies, f_scores, tot_gt_mass, overall_correct = cm["precision"], cm["recall"], cm["accuracy"], cm["f1_score"], cm["gt_mass"], cm["true_positives"]
                         for classnum in range(gt.shape[-1]):
