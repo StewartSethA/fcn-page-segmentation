@@ -95,20 +95,20 @@ def visualize_distance_weighted_errors(outpath, pred, gt):
 def visualize_errors(outpath, gt, pred, gtthreshold=0.5, predthreshold=0.5):
     cv2.imwrite(outpath+"_gt.png", vis_img(gt, bgr=False)*255)
     cv2.imwrite(outpath+"_pred.jpg", vis_img(pred, bgr=False)*255)
-    if type(predthreshold) == list:
-        predthresh = pred.copy()
-        for c in range(predthresh.shape[-1]):
-            print("Applying threshold", predthreshold[c], "for class", c)
-            predthresh[:,:,c] = np.greater(predthresh[:,:,c], predthreshold[c]).astype('float32')
-    else:
-        predthresh = np.greater(pred, predthreshold).astype('float32')
-    cv2.imwrite(outpath+"_predthresh"+str(predthreshold)+".jpg", vis_img(predthresh, bgr=False)*255)
+    #if type(predthreshold) == list:
+    #    predthresh = pred.copy()
+    #    for c in range(predthresh.shape[-1]):
+    #        print("Applying threshold", predthreshold[c], "for class", c)
+    #        predthresh[:,:,c] = np.greater(predthresh[:,:,c], predthreshold[c]).astype('float32')
+    #else:
+    #    predthresh = np.greater(pred, predthreshold).astype('float32')
+    #cv2.imwrite(outpath+"_predthresh"+str(predthreshold)+".jpg", vis_img(predthresh, bgr=False)*255)
     pred_gt_diff=np.abs(pred-gt)
     cv2.imwrite(outpath+"_predgtdiff.jpg", vis_img(pred_gt_diff, bgr=False)*255)
-    predthresh_gt_diff=np.abs(predthresh-np.greater(gt, 0.5).astype('float32'))
-    cv2.imwrite(outpath+"_predthreshgtdiff"+str(predthreshold)+".jpg", vis_img(predthresh_gt_diff, bgr=False)*255)
+    #predthresh_gt_diff=np.abs(predthresh-np.greater(gt, 0.5).astype('float32'))
+    #cv2.imwrite(outpath+"_predthreshgtdiff"+str(predthreshold)+".jpg", vis_img(predthresh_gt_diff, bgr=False)*255)
     
-    visualize_distance_weighted_errors(outpath, pred, gt)
+    #visualize_distance_weighted_errors(outpath, pred, gt)
 
 class CachedMetrics(dict):
     '''

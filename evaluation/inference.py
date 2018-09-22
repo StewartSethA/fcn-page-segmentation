@@ -459,13 +459,13 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
         else:
             print("Performing inference...")
             try:
+                #a = 1/0
                 pred = model.predict(image, batch_size=1)#[0]
-                a = 1/0
             except Exception as ex: #tf.errors.ResourceExhaustedError as ex:
                 print("Validation threw Out of Memory Error", ex)
                 # Now try chunking and stitching the image for better inference.
                 # Send image chunks in instead.
-                size = 224*4 #max(image.shape[1], image.shape[2]) / 2 + 2
+                size = 224*4 #224*4 #max(image.shape[1], image.shape[2]) / 2 + 2
                 stride = size / 2
                 batch_size = 1
                 pred = None
@@ -474,6 +474,7 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                     try:
                         for x in range(0, image.shape[2]-size+stride/2, stride):
                             for y in range(0, image.shape[1]-size+stride/2, stride):
+                                print(x,y,size,stride,image.shape)
                                 imchunk = image[:, y:y+size, x:x+size, :]
                                 yx,xs = imchunk.shape[1:3]
                                 xd = size-imchunk.shape[2]
@@ -495,8 +496,8 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
                                 #cv2.imshow('pred', show(pred[0], bgr=True))
                                 #cv2.waitKey()
                         break
-                    except tf.errors.ResourceExhaustedError as ex:
-                        print("Still getting OOM Error on chunked inference. Halving chunk dimensions...")
+                    except (tf.errors.ResourceExhaustedError, Exception) as ex:
+                        print("Still getting OOM Error on chunked inference. Halving chunk dimensions...", ex)
                         size = size / 2 + 1
                         stride = size / 2
                         if size < 16:
