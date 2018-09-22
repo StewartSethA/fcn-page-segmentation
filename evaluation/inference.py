@@ -459,13 +459,14 @@ def TestModel(model_basepath=None, model=None, testfolder="./", output_folder=".
         else:
             print("Performing inference...")
             try:
-                #a = 1/0
+                a = 1/0
                 pred = model.predict(image, batch_size=1)#[0]
             except Exception as ex: #tf.errors.ResourceExhaustedError as ex:
                 print("Validation threw Out of Memory Error", ex)
                 # Now try chunking and stitching the image for better inference.
                 # Send image chunks in instead.
                 size = 224*4 #224*4 #max(image.shape[1], image.shape[2]) / 2 + 2
+                #size = 224*2 #max(image.shape[1], image.shape[2]) / 2 + 2
                 stride = size / 2
                 batch_size = 1
                 pred = None
