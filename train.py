@@ -133,7 +133,8 @@ def train(args):
         #save_model_callback = ModelCheckpoint(filepath = model_save_path, verbose=1, save_best_only=True, period=1)
         # We don't want to cheat since our validation images are our test images, so we shouldn't allow any flow of information to the model we use for testing/validation.
         save_model_callback = ModelCheckpoint(filepath = model_save_path, verbose=1, save_best_only=False, period=1)
-
+        from callbacks import SaveEveryEpochCallback
+        callbacks.append(SaveEveryEpochCallback(model, model_save_path, args.model_save_interval))
         from keras.callbacks import ReduceLROnPlateau
         callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0.00000000001))
 
