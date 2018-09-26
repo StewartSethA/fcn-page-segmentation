@@ -2,11 +2,13 @@
 
 This trainable page segmentation system uses fully-convolutional neural networks (FCNs) to label the contents of document images.
 
+### Training
 To train a Keras U-Net model on a dataset in the folder ./data/, run the following:
 ```
 python train.py --training_folder ./data/training/ --validation_folder ./data/validation/ --framework keras --model_type unet
 ```
 
+### Inference
 To perform inference on all images in a folder ./images/ using a saved model ./model_snapshot.h5, run the following:
 ```
 python infer.py --test_folder ./images/ --framework keras --load_model_path ./model_snapshot.h5
