@@ -13,8 +13,17 @@ python infer.py --test_folder ./images/ --framework keras --load_model_path ./mo
 ```
 
 ## Input data format
-Ground-truth annotations are of the format "Image1.jpg" with corresponding greyscale or binary ground truth images "Image1_handwriting.png", "Image1_machineprint.png", "Image1_stamps.png", etc.
-The names and number of classes will be determined automatically based on the contents of the training folder.
+Ground-truth annotations are of the format 
+```
+.
+|--- training_folder
+|--- |--- Image1.jpg
+|--- |--- Image1_handwriting.png
+|--- |--- Image1_machineprint.png
+|--- |--- Image1_stamps.png
+```
+etc., where the .png files are binary or greyscale images for each channel or class, of the same dimensions as the .jpg file sharing the root name before the underscore. Any channels that are omitted for a given image are assumed to be zero everywhere.
+When training or inferencing, the names and number of classes will be determined automatically based on the contents of the training folder.
 Alternatively, you can encode binary multi-label ground-truth as a .png file with the same base name as the input image ("Image1.jpg", ground truth as "Image1.png") using the RGB bit-masked format introduced 
 [here.](https://diuf.unifr.ch/main/hisdoc/icdar2017-hisdoc-layout-comp)
 
