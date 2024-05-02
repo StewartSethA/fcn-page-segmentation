@@ -4,7 +4,7 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 import requests
 
-api_key="***REMOVED***"
+api_key=""
 url="https://vision.googleapis.com/v1/images:annotate?key="+api_key
 
 request_data = {
