@@ -85,7 +85,8 @@ def visualize_weights(model, screen_height, screen_width, batch_num=0):
 class SaveEveryEpochCallback(Callback):
     def __init__(self, model, model_save_path, interval=1):
         self.interval = interval
-        self.model = model
+        #self.model = model
+        self.set_model(model)
         if model_save_path[-3:] != ".h5":
             model_save_path = model_save_path + ".h5"
         self.model_save_path = model_save_path
@@ -104,7 +105,8 @@ class DisplayTrainingSamplesCallback(Callback):
         self.training_generator = training_generator_class
         self.interval = interval
         self.batch_num = -2
-        self.model = model
+        #self.model = model
+        self.set_model(model)
         self.log_dir = log_dir
         self.pixels_per_class_per_sample = defaultdict(list)
         self.historic_weighted_thresholds = defaultdict(list)
@@ -192,7 +194,8 @@ class DisplayTrainingSamplesCallback(Callback):
 
 class DisplayActivationsCallback(Callback):
     def __init__(self, model=None, input_generator=None):
-        self.model = model
+        #self.model = model
+        self.set_model(model)
         self.input_generator = input_generator
         self.display_interval = 50
         self.batch_num = 0
@@ -213,7 +216,7 @@ def get_screen_resolution():
 
 class VisualizeWeightsCallback(Callback):
     def __init__(self, model=None, display_interval=10):
-        self.model = model
+        self.set_model(model)
         self.display_interval = display_interval
         self.batch_num = 0
         res = get_screen_resolution()
@@ -250,7 +253,7 @@ def normalize_weights(model, batch_num):
 
 class WeightNormalizationCallback(Callback):
     def __init__(self, model=None, normalization_interval=100, max_normalization_batchnum=200):
-        self.model = model
+        self.set_model(model)
         self.normalization_interval = normalization_interval
         self.batch_num = 0
         self.max_normalization_batchnum = max_normalization_batchnum
@@ -309,7 +312,7 @@ class DisplayAccuracyCallback(Callback):
         self.batch_num = 0
         self.best_macro_fscore = 0.0
         self.log_dir = log_dir
-        self.model = model
+        self.set_model(model)
         self.thresholds = None
 
     # on_batch_end
@@ -387,10 +390,9 @@ class DisplayAccuracyCallback(Callback):
         #plt.pause(0.001)
 
         print("Computing precisions, recalls, etc.!")
-        #return 2 # 200 MB per call memory leak is coming from up here!
-        # IT WAS THE lack of a call to plt.clf() before rendering a new image! Ugh!
+        # Remember to call plt.clf() to avoid a memory leak!
+
         #predsrgbchannels = multihot_to_multiindexed_rgb(preds[0])
-        #cv2.imwrite(impath + "_predsrgbchannels.png", predsrgbchannels)
         #print("Performing HisDoc Evaluation...")
 
         #print("Scores", scores)
@@ -619,7 +621,7 @@ def display_stats(tensor, name="None", numbins=10):
 
 class DisplayWeightStatsCallback(Callback):
     def __init__(self, model):
-        self.model = model
+        self.set_model(model)
         self.interval = 100
         self.model.weights_good = True
         self.iteration = 0
@@ -637,7 +639,7 @@ class DisplayWeightStatsCallback(Callback):
 
 class DisplayActivationStatsCallback(Callback):
     def __init__(self, model):
-        self.model = model
+        self.set_model(model)
 
 class LogMemoryUsageCallback(Callback):
     def __init__(self):
@@ -718,7 +720,7 @@ def _mkdir(newdir):
 
 class TFModelSaverCallback(Callback):
     def __init__(self, model, model_save_path, save_interval=5000, start_iteration=0):
-        self.model = model
+        self.set_model(model)
         self.iteration = start_iteration
         self.model_save_path = model_save_path
         self.save_interval = save_interval
@@ -734,7 +736,7 @@ class TFModelSaverCallback(Callback):
 
 class TestModelCallback(Callback):
     def __init__(self, model, save_basepath="best_model", testfolder="./test", testscale=1.0, pixel_counts_byclass=None):
-        self.model = model
+        self.set_model(model)
         self.save_basepath = save_basepath
         self.model_version = 0
         self.gradient_history = []

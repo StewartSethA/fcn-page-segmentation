@@ -7,7 +7,7 @@ from collections import OrderedDict
 from torch.nn import init
 import numpy as np
 import os
-from pytorch_losses import Nadam
+from models.pytorch_losses import Nadam
 import torch.nn.utils.weight_norm as weight_norm
 
 def conv3x3(in_channels, out_channels, stride=1, 
@@ -322,7 +322,7 @@ class PyTorchModelKerasStyle:
         return np.transpose(self.model(batch).data.cpu().numpy(), (0, 2, 3, 1))
 
     def train_step(self):
-        batch, targets = self.generator.next()
+        batch, targets = next(self.generator)
         batch = np.transpose(batch, (0, 3, 1, 2))
         batch = torch.autograd.Variable(torch.Tensor(batch).cuda())
         targets = torch.autograd.Variable(torch.Tensor(targets).cuda())
@@ -330,6 +330,8 @@ class PyTorchModelKerasStyle:
             batch.cuda()
             targets.cuda()
         y_pred = self.model(batch)
+        targets = targets.permute(0,3,1,2)
+        #print("y_pred, targets.shape", y_pred.shape, targets.shape)
         loss = self.loss_fn(y_pred, targets)
         #model.zero_grad()
         self.optimizer.zero_grad()
@@ -358,9 +360,9 @@ class PyTorchModelKerasStyle:
             for step in range(steps_per_epoch):
                 if verbose > 1:
                     print("Training iteration", self.iteration)
-                
                 y_pred, loss = self.train_step()
-                print("Epoch""Average prediction:", np.mean(y_pred), "Loss:", loss)
+                if self.iteration % 20 == 0:
+                  print("Average prediction:", np.mean(y_pred), "Loss:", loss)
                 # Call all of the callbacks!
                 logs = {"loss":loss}
                 for callback in callbacks:
@@ -383,9 +385,9 @@ class PyTorchModelKerasStyle:
         save_checkpoint({
             'epoch': self.epoch + 1,
             'arch': self.model_type,
-            'state_dict': model.state_dict(),
+            'state_dict': self.model.state_dict(),
             #'best_prec1': best_prec1,
-            'optimizer' : optimizer.state_dict()})
+            'optimizer' : self.optimizer.state_dict()})
 
 def build_model(args):
     print("")

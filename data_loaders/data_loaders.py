@@ -18,10 +18,10 @@ from collections import defaultdict
 import multiprocessing
 import time
 import os
-from utils import get_power_of_two_padding
-from gt_loaders import load_gt, index_training_set_by_class
-from preprocessing.data_augmentation import DataAugmenter
-from legacy_training_sample_generators import *
+from data_loaders.utils import get_power_of_two_padding
+from data_loaders.gt_loaders import load_gt, index_training_set_by_class
+from data_loaders.preprocessing.data_augmentation import DataAugmenter
+from data_loaders.legacy_training_sample_generators import *
 
 # An image batcher that loads image batches from a folder containing .jpg images.
 class WholeImageOnlyBatcher(object):
@@ -126,8 +126,8 @@ class ClassImageSampler(object):
         # Making samples random to reduce recall bias, favoring precision instead. Uncomment this to bias in favor of precision over recall.
         if np.random.random() > 0.5:
             x,y = np.random.randint(0,gt.shape[1]), np.random.randint(0,gt.shape[0])
-        x -= subcrop_dim/2
-        y -= subcrop_dim/2
+        x -= subcrop_dim//2
+        y -= subcrop_dim//2
         if x + subcrop_dim >= gt.shape[1]:
             x = gt.shape[1]-subcrop_dim-1
         if y + subcrop_dim >= gt.shape[0]:
@@ -220,14 +220,14 @@ def preproc(imgs,gts,num_classes,batch_size=64,width=28,height=28, do_preproc=Tr
         if random.random() > rotate_freq:
             h,w = img.shape[0], img.shape[1]
             angle = random.randint(-angle_range,angle_range)
-            p = (img.shape[1]/2, img.shape[0]/2)
+            p = (img.shape[1]//2, img.shape[0]//2)
             M = cv2.getRotationMatrix2D(p, angle, 1)
             # New improved rotate
             import imutils
             img = imutils.rotate_bound(img, angle)
             gt = imutils.rotate_bound(gt, angle)
-            oy = (img.shape[0] - h)/2
-            ox = (img.shape[1] - w)/2
+            oy = (img.shape[0] - h)//2
+            ox = (img.shape[1] - w)//2
             img = img[oy:oy+h,ox:ox+w]
             gt = gt[oy:oy+h,ox:ox+w,:]
             #img = cv2.warpAffine(img, M, (img.shape[1],img.shape[0]), borderMode=cv2.BORDER_REPLICATE)

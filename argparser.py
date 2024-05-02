@@ -21,7 +21,7 @@ def parse_args():
     # Batch size is small for a low-memory GPU. It can be increased,
     # but generally smaller batch sizes lead to faster convergence
     # (more parameter updates per unit computation), so it may be fine to keep this low.
-    parser.add_argument('--batch_size', type=int, default=-1, metavar='N', help='input batch size for training (default: -1; uses number of classes)')
+    parser.add_argument('--batch_size', type=int, default=32, metavar='N', help='input batch size for training (default: -1; uses number of classes)')
     parser.add_argument('--crop_size', type=int, default=224, metavar='M', help='training image crop size (default 128)')
     parser.add_argument('--batcher', type=str, default="legacy", metavar='N', help='Batcher: Enables or disables augmentations. Options are simple (default) and legacy (more augmentations)')
     parser.add_argument('--min_height_scale', type=float, default=0.25, metavar='N', help='Minimum scaling coefficient on training samples (Legacy batcher only)')

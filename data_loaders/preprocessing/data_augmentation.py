@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 import cv2
-import image_warper
+import data_loaders.preprocessing.image_warper
 import time
 from scipy import ndimage
 import random

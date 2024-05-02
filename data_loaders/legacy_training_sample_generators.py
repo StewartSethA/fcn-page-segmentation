@@ -32,10 +32,10 @@ def get_masked_regionsampler_semanticseg_multichannel_withtextimages(img, maskpi
                     invalid = False
                     break
             size = random.randint(minsize,maxsize)
-            l = max(0, x-size/2)
-            r = min(img.shape[1], x+size/2)
-            u = max(0, y-size/2)
-            b = min(img.shape[0], y+size/2)
+            l = max(0, x-size//2)
+            r = min(img.shape[1], x+size//2)
+            u = max(0, y-size//2)
+            b = min(img.shape[0], y+size//2)
         else:
             if random.random() > 0.25:
                 wordnum = get_word_with_charsegs(page)
@@ -68,10 +68,10 @@ def get_masked_regionsampler_semanticseg_multichannel_withtextimages(img, maskpi
                     y = random.randint(0,img.shape[0]-1)
                     #print(minsize, maxsize)
                     size = random.randint(minsize,maxsize)
-                    l = max(0, x-size/2)
-                    r = min(img.shape[1], x+size/2)
-                    u = max(0, y-size/2)
-                    b = min(img.shape[0], y+size/2)
+                    l = max(0, x-size//2)
+                    r = min(img.shape[1], x+size//2)
+                    u = max(0, y-size//2)
+                    b = min(img.shape[0], y+size//2)
                     if maskchannel >= maskpixels.shape[2]: # Skip testing for blank; it's virtually always there.
                         invalid = False
                         break
@@ -84,10 +84,10 @@ def get_masked_regionsampler_semanticseg_multichannel_withtextimages(img, maskpi
         print(tries, maskval, maskchannel, label)
 
         #print(x,y,size,img.shape)
-        pad_l = max(0, size/2-x)
-        pad_r = max(0, size/2-(img.shape[1]-1-x))
-        pad_u = max(0, size/2-y)
-        pad_b = max(0, size/2-(img.shape[0]-1-y))
+        pad_l = max(0, size//2-x)
+        pad_r = max(0, size//2-(img.shape[1]-1-x))
+        pad_u = max(0, size//2-y)
+        pad_b = max(0, size//2-(img.shape[0]-1-y))
         #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
 
 
@@ -147,10 +147,10 @@ def get_masked_regionsampler_semanticseg_multichannel_withtextboxes(img, maskpix
             size = random.randint(minsize,maxsize)
         else:
             size = random.randint(minsize,((maxsize)/8+minsize))
-        l = max(0, x-size/2)
-        r = min(img.shape[1], x+size/2)
-        u = max(0, y-size/2)
-        b = min(img.shape[0], y+size/2)
+        l = max(0, x-size//2)
+        r = min(img.shape[1], x+size//2)
+        u = max(0, y-size//2)
+        b = min(img.shape[0], y+size//2)
     else:
         if random.random() > 0.25:
             wordnum = get_word_with_charsegs(page)
@@ -184,11 +184,11 @@ def get_masked_regionsampler_semanticseg_multichannel_withtextboxes(img, maskpix
             if random.random() > 0.5:
                 size = random.randint(minsize,maxsize)
             else:
-                size = random.randint(minsize,(maxsize+minsize)/2)
-            l = max(0, x-size/2)
-            r = min(img.shape[1], x+size/2)
-            u = max(0, y-size/2)
-            b = min(img.shape[0], y+size/2)
+                size = random.randint(minsize,(maxsize+minsize)//2)
+            l = max(0, x-size//2)
+            r = min(img.shape[1], x+size//2)
+            u = max(0, y-size//2)
+            b = min(img.shape[0], y+size//2)
             if maskchannel >= maskpixels.shape[2]: # Skip testing for blank; it's virtually always there.
                 invalid = False
                 break
@@ -201,10 +201,10 @@ def get_masked_regionsampler_semanticseg_multichannel_withtextboxes(img, maskpix
     #print(tries)
 
     #print(x,y,size,img.shape)
-    pad_l = max(0, size/2-x)
-    pad_r = max(0, size/2-(img.shape[1]-1-x))
-    pad_u = max(0, size/2-y)
-    pad_b = max(0, size/2-(img.shape[0]-1-y))
+    pad_l = max(0, size//2-x)
+    pad_r = max(0, size//2-(img.shape[1]-1-x))
+    pad_u = max(0, size//2-y)
+    pad_b = max(0, size//2-(img.shape[0]-1-y))
     #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(255)
@@ -271,20 +271,20 @@ def get_masked_regionsampler_semanticseg_multichannel_withpairedregions(img, mas
                 invalid = False
                 break
         size = random.randint(minsize,maxsize)
-        l = max(0, x-size/2)
-        r = min(img.shape[1], x+size/2)
-        u = max(0, y-size/2)
-        b = min(img.shape[0], y+size/2)
+        l = max(0, x-size//2)
+        r = min(img.shape[1], x+size//2)
+        u = max(0, y-size//2)
+        b = min(img.shape[0], y+size//2)
     else:
         while invalid:
             x = random.randint(0,img.shape[1]-1)
             y = random.randint(0,img.shape[0]-1)
             #print(minsize, maxsize)
             size = random.randint(minsize,maxsize)
-            l = max(0, x-size/2)
-            r = min(img.shape[1], x+size/2)
-            u = max(0, y-size/2)
-            b = min(img.shape[0], y+size/2)
+            l = max(0, x-size//2)
+            r = min(img.shape[1], x+size//2)
+            u = max(0, y-size//2)
+            b = min(img.shape[0], y+size//2)
             if maskchannel >= maskpixels.shape[2]: # Skip testing for blank; it's virtually always there.
                 invalid = False
                 break
@@ -296,10 +296,10 @@ def get_masked_regionsampler_semanticseg_multichannel_withpairedregions(img, mas
     #print(tries)
 
     #print(x,y,size,img.shape)
-    pad_l = max(0, size/2-x)
-    pad_r = max(0, size/2-(img.shape[1]-1-x))
-    pad_u = max(0, size/2-y)
-    pad_b = max(0, size/2-(img.shape[0]-1-y))
+    pad_l = max(0, size//2-x)
+    pad_r = max(0, size//2-(img.shape[1]-1-x))
+    pad_u = max(0, size//2-y)
+    pad_b = max(0, size//2-(img.shape[0]-1-y))
     #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(1.0)
@@ -328,34 +328,34 @@ def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0
                 invalid = False
                 break
         size = random.randint(minsize,maxsize)
-        l = max(0, x-size/2)
-        r = min(img.shape[1], x+size/2)
-        u = max(0, y-size/2)
-        b = min(img.shape[0], y+size/2)
+        l = max(0, x-size//2)
+        r = min(img.shape[1], x+size//2)
+        u = max(0, y-size//2)
+        b = min(img.shape[0], y+size//2)
     else:
         if np.sum(maskpixels[:,:,maskchannel]) == 0:
             pass
             x = random.randint(0,img.shape[1]-1)
             y = random.randint(0,img.shape[0]-1)
             size = random.randint(minsize,maxsize)
-            l = max(0, x-size/2)
-            r = min(img.shape[1], x+size/2)
-            u = max(0, y-size/2)
-            b = min(img.shape[0], y+size/2)
+            l = max(0, x-size//2)
+            r = min(img.shape[1], x+size//2)
+            u = max(0, y-size//2)
+            b = min(img.shape[0], y+size//2)
         else:
             while invalid and tries < 50:
                 x = random.randint(0,img.shape[1]-1)
                 y = random.randint(0,img.shape[0]-1)
                 if maskchannel == 4:
                     x = random.randint(int(img.shape[1]*.35),img.shape[1]-1)
-                    y = random.randint(0,img.shape[0]/4-1)
+                    y = random.randint(0,img.shape[0]//4-1)
 
                 #print(minsize, maxsize)
                 size = random.randint(minsize,maxsize)
-                l = max(0, x-size/2)
-                r = min(img.shape[1], x+size/2)
-                u = max(0, y-size/2)
-                b = min(img.shape[0], y+size/2)
+                l = max(0, x-size//2)
+                r = min(img.shape[1], x+size//2)
+                u = max(0, y-size//2)
+                b = min(img.shape[0], y+size//2)
                 if maskchannel >= maskpixels.shape[2]: # Skip testing for blank; it's virtually always there.
                     invalid = False
                     break
@@ -373,10 +373,10 @@ def get_masked_regionsampler_semanticseg_multichannel(img, maskpixels, maskval=0
     #print("Tries:", tries)
 
     #print(x,y,size,img.shape)
-    pad_l = max(0, size/2-x)
-    pad_r = max(0, size/2-(img.shape[1]-1-x))
-    pad_u = max(0, size/2-y)
-    pad_b = max(0, size/2-(img.shape[0]-1-y))
+    pad_l = max(0, size//2-x)
+    pad_r = max(0, size//2-(img.shape[1]-1-x))
+    pad_u = max(0, size//2-y)
+    pad_b = max(0, size//2-(img.shape[0]-1-y))
     #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     if len(img.shape) == 2:
         region = np.zeros((size,size))
@@ -422,19 +422,19 @@ def get_masked_regionsampler_semanticseg(img, maskpixels, maskval=0, numclasses=
                 invalid = False
                 break
         size = random.randint(minsize,maxsize)
-        l = max(0, x-size/2)
-        r = min(img.shape[1], x+size/2)
-        u = max(0, y-size/2)
-        b = min(img.shape[0], y+size/2)
+        l = max(0, x-size//2)
+        r = min(img.shape[1], x+size//2)
+        u = max(0, y-size//2)
+        b = min(img.shape[0], y+size//2)
     else:
         while invalid:
             x = random.randint(0,img.shape[1]-1)
             y = random.randint(0,img.shape[0]-1)
             size = random.randint(minsize,maxsize)
-            l = max(0, x-size/2)
-            r = min(img.shape[1], x+size/2)
-            u = max(0, y-size/2)
-            b = min(img.shape[0], y+size/2)
+            l = max(0, x-size//2)
+            r = min(img.shape[1], x+size//2)
+            u = max(0, y-size//2)
+            b = min(img.shape[0], y+size//2)
             if np.mean((255.0-maskpixels)[u:b,l:r])/255.0 < criterion: # TODO: Assumes maskval is zero
                 tries += 1
             else:
@@ -443,10 +443,10 @@ def get_masked_regionsampler_semanticseg(img, maskpixels, maskval=0, numclasses=
     #print(tries)
 
     #print(x,y,size,img.shape)
-    pad_l = max(0, size/2-x)
-    pad_r = max(0, size/2-(img.shape[1]-1-x))
-    pad_u = max(0, size/2-y)
-    pad_b = max(0, size/2-(img.shape[0]-1-y))
+    pad_l = max(0, size//2-x)
+    pad_r = max(0, size//2-(img.shape[1]-1-x))
+    pad_u = max(0, size//2-y)
+    pad_b = max(0, size//2-(img.shape[0]-1-y))
     #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(255)
@@ -480,19 +480,19 @@ def get_masked_regionsampler(img, maskpixels, maskval=0, numclasses=2, label=0, 
                 invalid = False
                 break
         size = random.randint(minsize,maxsize)
-        l = max(0, x-size/2)
-        r = min(img.shape[1], x+size/2)
-        u = max(0, y-size/2)
-        b = min(img.shape[0], y+size/2)
+        l = max(0, x-size//2)
+        r = min(img.shape[1], x+size//2)
+        u = max(0, y-size//2)
+        b = min(img.shape[0], y+size//2)
     else:
         while invalid:
             x = random.randint(0,img.shape[1]-1)
             y = random.randint(0,img.shape[0]-1)
             size = random.randint(minsize,maxsize)
-            l = max(0, x-size/2)
-            r = min(img.shape[1], x+size/2)
-            u = max(0, y-size/2)
-            b = min(img.shape[0], y+size/2)
+            l = max(0, x-size//2)
+            r = min(img.shape[1], x+size//2)
+            u = max(0, y-size//2)
+            b = min(img.shape[0], y+size//2)
             if np.mean((255.0-maskpixels)[u:b,l:r])/255.0 < criterion: # TODO: Assumes maskval is zero
                 tries += 1
             else:
@@ -500,15 +500,15 @@ def get_masked_regionsampler(img, maskpixels, maskval=0, numclasses=2, label=0, 
                 break
     #print(tries)
     size = random.randint(minsize,maxsize)
-    l = max(0, x-size/2)
-    r = min(img.shape[1], x+size/2)
-    u = max(0, y-size/2)
-    b = min(img.shape[0], y+size/2)
+    l = max(0, x-size//2)
+    r = min(img.shape[1], x+size//2)
+    u = max(0, y-size//2)
+    b = min(img.shape[0], y+size//2)
     #print(x,y,size,img.shape)
-    pad_l = max(0, size/2-x)
-    pad_r = max(0, size/2-(img.shape[1]-1-x))
-    pad_u = max(0, size/2-y)
-    pad_b = max(0, size/2-(img.shape[0]-1-y))
+    pad_l = max(0, size//2-x)
+    pad_r = max(0, size//2-(img.shape[1]-1-x))
+    pad_u = max(0, size//2-y)
+    pad_b = max(0, size//2-(img.shape[0]-1-y))
     #print(l,r,u,b, ":", pad_l, pad_r, pad_u, pad_b)
     region = np.zeros((size,size))
     region.fill(255)
@@ -553,7 +553,7 @@ def scale_pad_and_center(sample, height=28, width=28, pad_value=0, do_center=Tru
 def pad_and_center(sample, height=28, width=28, pad_value=0, mode='constant', do_center=True): #mean'): #'linear_ramp'): #'edge'
     pad_w = width-sample.shape[1]
     pad_h = height-sample.shape[0]
-    pad_t = pad_h/2
+    pad_t = pad_h//2
     pad_b = pad_h - pad_t
     pad_l = pad_w / 2
     pad_r = pad_w - pad_l
@@ -607,8 +607,8 @@ if False:
         charsegs = page['bbox_charsegs'][wordnum]
         segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
         #print(segnum, len(charsegs))
-        left = max(0, charsegs[segnum] + bbox[0][0] - width/2)
-        right = min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] + width/2)
+        left = max(0, charsegs[segnum] + bbox[0][0] - width//2)
+        right = min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] + width//2)
         sample = img[bbox[0][1]:bbox[1][1],left:right]
         sample = scale_pad_and_center(sample, height, width)
         gt = ""
@@ -623,8 +623,8 @@ if False:
         bbox = page['bboxes'][wordnum]
         charsegs = page['bbox_charsegs'][wordnum]
         segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
-        left = max(0, charsegs[segnum] + bbox[0][0] - width/2)
-        right = min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] + width/2)
+        left = max(0, charsegs[segnum] + bbox[0][0] - width//2)
+        right = min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] + width//2)
         sample = img[bbox[0][1]:bbox[1][1],left:right]
         sample = scale_pad_and_center(sample, height, width)
         gt = ""
@@ -639,8 +639,8 @@ if False:
         bbox = page['bboxes'][wordnum]
         charsegs = page['bbox_charsegs'][wordnum]
         segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
-        left = bbox[0][0] #max(0, charsegs[segnum] + bbox[0][0] - width/2)
-        right = bbox[1][0]#min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] - width/2)
+        left = bbox[0][0] #max(0, charsegs[segnum] + bbox[0][0] - width//2)
+        right = bbox[1][0]#min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] - width//2)
         sample = img[bbox[0][1]:bbox[1][1],left:right]
         sample = scale_pad_and_center(sample, height, width)
         encoded_gt = np.zeros(len(char_to_idx)+extra_classes)
@@ -655,9 +655,9 @@ if False:
         bbox = page['bboxes'][wordnum]
         charsegs = page['bbox_charsegs'][wordnum]
         segnum = random.randint(0, len(charsegs)-1) if len(charsegs) > 1 else 0
-        left = bbox[0][0] #max(0, charsegs[segnum] + bbox[0][0] - width/2)
-        right = bbox[1][0]#min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] - width/2)
-        offset = random.randint(height/4,height/2+1)
+        left = bbox[0][0] #max(0, charsegs[segnum] + bbox[0][0] - width//2)
+        right = bbox[1][0]#min(img.shape[1]-1, charsegs[segnum] + bbox[0][0] - width//2)
+        offset = random.randint(height//4,height//2+1)
         direct = -1 if random.random() < 0.5 else 1
         top = max(0, bbox[0][1]+offset*direct)
         bottom = max(1, bbox[1][1]+offset*direct)

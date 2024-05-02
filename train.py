@@ -177,7 +177,7 @@ def train(args):
     print("Training!")
     #try:
     #model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=validation_generator, validation_steps=1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
-    model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=None, validation_steps=-1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=False)
+    model.fit_generator(generator=training_generator, epochs=args.epochs, steps_per_epoch=args.steps_per_epoch, validation_data=None, validation_steps=-1, callbacks=callbacks, max_queue_size=4*batch_size, workers=1, use_multiprocessing=True)
     #except Exception as ex:
     #    print("Exception caught!")
     #    print(ex)
