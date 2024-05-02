@@ -1,6 +1,7 @@
 # fcn-page-segmentation
 
 MS Thesis code for https://scholarsarchive.byu.edu/etd/7109/
+
 This trainable page segmentation system uses fully-convolutional neural networks (FCNs) to label the contents of document images.
 
 ### Training
